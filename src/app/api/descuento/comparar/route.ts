@@ -9,18 +9,26 @@ import { DescuentoService } from '@/services/descuento.service';
  * 
  * Body:
  * {
- *   descuentos: number[] - Array of discount percentages
- *   elasticidad_papas?: number
- *   elasticidad_totopos?: number
+ *   descuentos: number[] - Array of discount percentages (e.g., [0.3, 0.4, 0.5])
+ *   items: PromocionItem[] - Array of items with elasticity and category
+ * }
+ * 
+ * Example:
+ * {
+ *   "descuentos": [0.3, 0.35, 0.4, 0.45, 0.5],
+ *   "items": [
+ *     { "elasticidad": 1.5, "categoria": "PAPAS" },
+ *     { "elasticidad": 1.8, "categoria": "TOTOPOS" }
+ *   ]
  * }
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { descuentos, elasticidad_papas, elasticidad_totopos } = body;
+    const { descuentos, items } = body;
 
-    // Validate
+    // Validate descuentos
     if (!Array.isArray(descuentos) || descuentos.length === 0) {
       return NextResponse.json(
         {
@@ -46,17 +54,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validate items
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid items',
+          message: 'items must be a non-empty array',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate each item
+    for (const item of items) {
+      if (typeof item.elasticidad !== 'number' || typeof item.categoria !== 'string') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Invalid item format',
+            message: 'Each item must have elasticidad (number) and categoria (string)',
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Initialize service
     const supabase = createServerSupabaseClient();
     const repository = new DescuentoRepository(supabase);
     const service = new DescuentoService(repository);
 
     // Compare discounts
-    const data = await service.compararDescuentos(
-      descuentos,
-      elasticidad_papas,
-      elasticidad_totopos
-    );
+    const data = await service.compararDescuentos(descuentos, items);
 
     return NextResponse.json({
       success: true,

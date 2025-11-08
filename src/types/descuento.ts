@@ -32,32 +32,33 @@ export interface DescuentoMetrics {
  * Calculated metrics for a promotion
  */
 export interface PromocionMetrics extends DescuentoMetrics {
-  descuento_porcentaje: number;     // Discount as percentage (41)
+  descuento: number;     // Discount as percentage (41)
   elasticidad: number;               // Elasticity used
   categoria: string;                 // Category
-  reduccion_riesgo: number;         // Risk reduction percentage
-  costo_promocion: number;          // Promotion cost (valor)
-  valor_capturar: number;           // Value to capture (venta_original)
-  inventario_post: number;          // Post-promotion inventory
-}
-
-/**
- * Configuration for a promotion
- */
-export interface PromocionConfig {
-  descuento_maximo: number;         // Maximum discount %
-  elasticidad_papas: number;        // Elasticity for PAPAS
-  elasticidad_totopos: number;      // Elasticity for TOTOPOS
+  // reduccion_riesgo: number;         // Risk reduction percentage
+  // costo_promocion: number;          // Promotion cost (valor)
+  // valor_capturar: number;           // Value to capture (venta_original)
+  // inventario_post: number;          // Post-promotion inventory
 }
 
 /**
  * Complete promotion response
  */
 export interface PromocionResponse {
-  papas: PromocionMetrics | null;
-  totopos: PromocionMetrics | null;
-  config: PromocionConfig;
+  items: Record<string, PromocionMetrics>;  // Dynamic categories
+  config: {
+    descuento_maximo: number;
+    items: PromocionItem[];
+  };
   timestamp: string;
+}
+
+/**
+ * Item configuration for promotion calculation
+ */
+export interface PromocionItem {
+  elasticidad: number;
+  categoria: string;
 }
 
 /**
@@ -65,9 +66,7 @@ export interface PromocionResponse {
  */
 export interface CalcularPromocionRequest {
   descuento: number;
-  elasticidad_papas?: number;
-  elasticidad_totopos?: number;
-  categorias?: string[];  // Optional: filter by categories
+  items?: PromocionItem[];
 }
 
 /**
@@ -101,5 +100,22 @@ export interface StoreDescuentoMetrics {
   ventas_plus: number;
   valor_capturar: number;
   costo_promocion: number;
+}
+
+/**
+ * Category with expiration impact
+ */
+export interface CategoriaConCaducidad {
+  category: string;
+  impacto: number;
+}
+
+/**
+ * Top categories close to expiration response
+ */
+export interface TopCategoriasExpiracionResponse {
+  categorias: CategoriaConCaducidad[];
+  total_impacto: number;
+  timestamp: string;
 }
 

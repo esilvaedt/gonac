@@ -64,6 +64,7 @@ export class ValorizacionRepository {
    */
   private async getAgotadoData(): Promise<ValorizacionItem> {
     const { data, error } = await this.supabase
+      .schema('gonac')
       .from('agotamiento_detalle')
       .select('id_store, impacto');
 
@@ -86,6 +87,7 @@ export class ValorizacionRepository {
    */
   private async getCaducidadData(): Promise<ValorizacionItem> {
     const { data, error } = await this.supabase
+      .schema('gonac')
       .from('caducidad_detalle')
       .select('id_store, impacto');
 
@@ -108,6 +110,7 @@ export class ValorizacionRepository {
    */
   private async getSinVentasData(): Promise<ValorizacionItem> {
     const { data, error } = await this.supabase
+      .schema('gonac')
       .from('sin_ventas_detalle')
       .select('id_store, impacto');
 

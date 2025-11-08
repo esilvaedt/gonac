@@ -1,10 +1,15 @@
 import { useState, useCallback, useEffect } from 'react';
-import { PromocionResponse, CalcularPromocionRequest } from '@/types/descuento';
+import { 
+  PromocionResponse, 
+  CalcularPromocionRequest,
+  TopCategoriasExpiracionResponse,
+  CategoriaConCaducidad,
+  PromocionItem
+} from '@/types/descuento';
 
 interface UseDescuentoOptions {
   descuento?: number;
-  elasticidad_papas?: number;
-  elasticidad_totopos?: number;
+  items?: PromocionItem[];
   autoFetch?: boolean;
 }
 
@@ -23,19 +28,24 @@ interface UseDescuentoReturn {
  * ```tsx
  * const { data, loading, calcular } = useDescuento();
  * 
- * // Calculate for 41% discount
- * await calcular({ descuento: 0.41 });
+ * // Calculate for 41% discount with multiple items
+ * await calcular({
+ *   descuento: 0.41,
+ *   items: [
+ *     { elasticidad: 1.5, categoria: 'PAPAS' },
+ *     { elasticidad: 1.8, categoria: 'TOTOPOS' }
+ *   ]
+ * });
  * 
- * // Access results
- * console.log(data.papas.costo_promocion);
- * console.log(data.totopos.valor_capturar);
+ * // Access results dynamically
+ * console.log(data.items['PAPAS'].costo_promocion);
+ * console.log(data.items['TOTOPOS'].valor_capturar);
  * ```
  */
 export function useDescuento(options: UseDescuentoOptions = {}): UseDescuentoReturn {
   const {
     descuento,
-    elasticidad_papas,
-    elasticidad_totopos,
+    items,
     autoFetch = false,
   } = options;
 
@@ -48,21 +58,14 @@ export function useDescuento(options: UseDescuentoOptions = {}): UseDescuentoRet
       setLoading(true);
       setError(null);
 
-      const queryParams = new URLSearchParams({
-        descuento: params.descuento.toString(),
+      // Always use POST with items array
+      const response = await fetch('/api/descuento', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(params),
       });
-
-      if (params.elasticidad_papas) {
-        queryParams.append('elasticidad_papas', params.elasticidad_papas.toString());
-      }
-      if (params.elasticidad_totopos) {
-        queryParams.append('elasticidad_totopos', params.elasticidad_totopos.toString());
-      }
-      if (params.categorias) {
-        queryParams.append('categorias', params.categorias.join(','));
-      }
-
-      const response = await fetch(`/api/descuento?${queryParams.toString()}`);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -85,14 +88,13 @@ export function useDescuento(options: UseDescuentoOptions = {}): UseDescuentoRet
   }, []);
 
   const refetch = useCallback(async () => {
-    if (descuento) {
+    if (descuento && items) {
       await calcular({
         descuento,
-        elasticidad_papas,
-        elasticidad_totopos,
+        items,
       });
     }
-  }, [descuento, elasticidad_papas, elasticidad_totopos, calcular]);
+  }, [descuento, items, calcular]);
 
   // Auto-fetch on mount if configured
   useEffect(() => {
@@ -121,8 +123,7 @@ export function useCompararDescuentos() {
   const comparar = useCallback(
     async (
       descuentos: number[],
-      elasticidad_papas?: number,
-      elasticidad_totopos?: number
+      items: PromocionItem[]
     ) => {
       try {
         setLoading(true);
@@ -135,8 +136,7 @@ export function useCompararDescuentos() {
           },
           body: JSON.stringify({
             descuentos,
-            elasticidad_papas,
-            elasticidad_totopos,
+            items,
           }),
         });
 
@@ -167,6 +167,61 @@ export function useCompararDescuentos() {
     loading,
     error,
     comparar,
+  };
+}
+
+/**
+ * Hook for getting top categories with close-to-expiration products
+ */
+export function useCategoriasConCaducidad(options: { limit?: number; autoFetch?: boolean } = {}) {
+  const { limit = 2, autoFetch = true } = options;
+
+  const [data, setData] = useState<TopCategoriasExpiracionResponse | null>(null);
+  const [loading, setLoading] = useState<boolean>(autoFetch);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = new URLSearchParams({
+        limit: limit.toString(),
+      });
+
+      const response = await fetch(`/api/descuento/categorias-caducidad?${params.toString()}`);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to fetch expiration categories');
+      }
+
+      setData(result.data);
+    } catch (err) {
+      setError(err as Error);
+      console.error('useCategoriasConCaducidad error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [limit]);
+
+  useEffect(() => {
+    if (autoFetch) {
+      fetchData();
+    }
+  }, [autoFetch, fetchData]);
+
+  return {
+    data,
+    loading,
+    error,
+    refetch: fetchData,
   };
 }
 
