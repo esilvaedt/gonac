@@ -3,6 +3,11 @@ import { useState, useMemo, useEffect } from "react";
 import { VemioData, vemioMockData } from "@/data/vemio-mock-data";
 import { ExhibicionesAdicionalesCalculator } from "@/utils/exhibicionesAdicionalesCalculator";
 import { useCategoriasConCaducidad, useDescuento, useCategoryStats } from "@/hooks/useDescuento";
+import { 
+  useAccionReabastoSummary, 
+  useAccionReabastoPorTienda, 
+  useAccionReabastoDetalle 
+} from "@/hooks/useAccionReabasto";
 
 interface AccionesViewProps {
   data: VemioData["acciones"];
@@ -57,6 +62,11 @@ export default function AccionesView({ data }: AccionesViewProps) {
   // State for Minimizar Agotados detail views
   const [showDetailBySKU, setShowDetailBySKU] = useState(false);
   const [showDetailByTienda, setShowDetailByTienda] = useState(false);
+
+  // Fetch Acción #1: Reabasto Urgente data
+  const { data: reabastoSummary, loading: reabastoSummaryLoading } = useAccionReabastoSummary();
+  const { data: reabastoPorTienda, loading: reabastoPorTiendaLoading } = useAccionReabastoPorTienda();
+  const { data: reabastoDetalle, loading: reabastoDetalleLoading } = useAccionReabastoDetalle();
 
   // Calculate exhibiciones adicionales dynamically
   const exhibicionesCalculadas = useMemo(() => {
@@ -190,27 +200,61 @@ export default function AccionesView({ data }: AccionesViewProps) {
         <div className="p-6">
           {actionType === 'minimizarAgotados' ? (
             <>
-              {/* Metrics Cards for Minimizar Agotados */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                  <div className="text-sm text-blue-600 dark:text-blue-400">Monto Total</div>
-                  <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
-                    {formatCurrency(actionData.valorPotencial.pesos)}
+              {/* Loading State */}
+              {reabastoSummaryLoading && (
+                <div className="text-center py-8">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Cargando datos de reabasto...</p>
+                </div>
+              )}
+
+              {/* Metrics Cards for Minimizar Agotados - Using Real Data */}
+              {!reabastoSummaryLoading && reabastoSummary && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                    <div className="text-sm text-blue-600 dark:text-blue-400">Monto Total</div>
+                    <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
+                      {formatCurrency(reabastoSummary.data.monto_total)}
+                    </div>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                    <div className="text-sm text-green-600 dark:text-green-400">Unidades Totales</div>
+                    <div className="text-xl font-bold text-green-700 dark:text-green-300">
+                      {formatNumber(reabastoSummary.data.unidades_totales)}
+                    </div>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+                    <div className="text-sm text-purple-600 dark:text-purple-400">Tiendas Impactadas</div>
+                    <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
+                      {reabastoSummary.data.tiendas_impactadas}
+                    </div>
                   </div>
                 </div>
-                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                  <div className="text-sm text-green-600 dark:text-green-400">Unidades Totales</div>
-                  <div className="text-xl font-bold text-green-700 dark:text-green-300">
-                    {formatNumber(actionData.valorPotencial.cantidad)}
+              )}
+
+              {/* Fallback to mock data if API fails */}
+              {!reabastoSummaryLoading && !reabastoSummary && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                    <div className="text-sm text-blue-600 dark:text-blue-400">Monto Total</div>
+                    <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
+                      {formatCurrency(actionData.valorPotencial.pesos)}
+                    </div>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                    <div className="text-sm text-green-600 dark:text-green-400">Unidades Totales</div>
+                    <div className="text-xl font-bold text-green-700 dark:text-green-300">
+                      {formatNumber(actionData.valorPotencial.cantidad)}
+                    </div>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+                    <div className="text-sm text-purple-600 dark:text-purple-400">Tiendas Impactadas</div>
+                    <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
+                      {actionData.valorPotencial.tiendasImpacto}
+                    </div>
                   </div>
                 </div>
-                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-                  <div className="text-sm text-purple-600 dark:text-purple-400">Tiendas Impactadas</div>
-                  <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
-                    {actionData.valorPotencial.tiendasImpacto}
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Detail View Buttons */}
               <div className="flex flex-wrap gap-3 mb-6">
@@ -243,71 +287,124 @@ export default function AccionesView({ data }: AccionesViewProps) {
               {/* Detail by SKU */}
               {showDetailBySKU && (
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-6 border border-gray-200 dark:border-gray-700">
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Detalle por SKU</h4>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-                      <thead>
-                        <tr>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tiendas</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Unidades</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Valor</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-                        <tr>
-                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">Producto A Premium</td>
-                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">2</td>
-                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">80</td>
-                          <td className="px-3 py-2 text-sm text-green-600 font-medium">{formatCurrency(17000)}</td>
-                        </tr>
-                        <tr>
-                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">Producto C Económico</td>
-                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">2</td>
-                          <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">120</td>
-                          <td className="px-3 py-2 text-sm text-green-600 font-medium">{formatCurrency(30500)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-4">
+                    Detalle por SKU
+                    {reabastoDetalle && ` (${reabastoDetalle.total} registros)`}
+                  </h4>
+                  
+                  {/* Loading State */}
+                  {reabastoDetalleLoading && (
+                    <div className="text-center py-8">
+                      <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Cargando detalles...</p>
+                    </div>
+                  )}
+
+                  {/* Real Data Table - Grouped by Store */}
+                  {!reabastoDetalleLoading && reabastoDetalle && reabastoDetalle.data.length > 0 && (
+                    <div className="space-y-4">
+                      {/* Group data by store */}
+                      {Object.entries(
+                        reabastoDetalle.data.reduce((acc: Record<string, typeof reabastoDetalle.data>, item) => {
+                          if (!acc[item.store_name]) {
+                            acc[item.store_name] = [];
+                          }
+                          acc[item.store_name].push(item);
+                          return acc;
+                        }, {})
+                      ).map(([storeName, products]) => (
+                        <div key={storeName} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                          {/* Store Header */}
+                          <h5 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center">
+                            <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                            Tienda {storeName}
+                          </h5>
+
+                          {/* Products Table */}
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                              <thead>
+                                <tr>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Producto</th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Unidades</th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Monto</th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Días Post-Reabasto</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-200 dark:divide-gray-600 bg-white dark:bg-gray-800">
+                                {products.map((item, index) => (
+                                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <td className="px-3 py-3 text-sm text-gray-900 dark:text-white">{item.product_name}</td>
+                                    <td className="px-3 py-3 text-sm text-gray-900 dark:text-white">{formatNumber(item.unidades_a_pedir)}</td>
+                                    <td className="px-3 py-3 text-sm text-green-600 font-medium">{formatCurrency(item.monto_necesario_pedido)}</td>
+                                    <td className="px-3 py-3 text-sm text-blue-600">{item.dias_inventario_post_reabasto} días</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* No Data State */}
+                  {!reabastoDetalleLoading && (!reabastoDetalle || reabastoDetalle.data.length === 0) && (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">No hay datos disponibles</p>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Detail by Tienda */}
-              {showDetailByTienda && actionData.detalles?.tiendas && (
+              {showDetailByTienda && (
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-6 border border-gray-200 dark:border-gray-700">
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Detalle por Tienda</h4>
-                  <div className="space-y-4">
-                    {actionData.detalles.tiendas.map((tienda: Record<string, any>) => (
-                      <div key={tienda.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                        <h5 className="font-medium text-gray-900 dark:text-white mb-3">{tienda.nombre}</h5>
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
-                            <thead>
-                              <tr>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">SKU</th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Días Agotado</th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Inv. Actual</th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Inv. Óptimo</th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Pedido</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-                              {tienda.skus.map((sku: Record<string, any>) => (
-                                <tr key={sku.id}>
-                                  <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{sku.nombre}</td>
-                                  <td className="px-3 py-2 text-sm text-red-600 font-medium">{sku.diasAgotado}</td>
-                                  <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{sku.inventarioActual}</td>
-                                  <td className="px-3 py-2 text-sm text-gray-900 dark:text-white">{sku.inventarioOptimo}</td>
-                                  <td className="px-3 py-2 text-sm text-green-600 font-medium">{sku.pedidoSugerido}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-4">
+                    Detalle por Tienda
+                    {reabastoPorTienda && ` (${reabastoPorTienda.total} tiendas)`}
+                  </h4>
+
+                  {/* Loading State */}
+                  {reabastoPorTiendaLoading && (
+                    <div className="text-center py-8">
+                      <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Cargando detalles por tienda...</p>
+                    </div>
+                  )}
+
+                  {/* Real Data Table */}
+                  {!reabastoPorTiendaLoading && reabastoPorTienda && reabastoPorTienda.data.length > 0 && (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                        <thead>
+                          <tr>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tienda</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Unidades a Pedir</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Monto Necesario</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                          {reabastoPorTienda.data.map((tienda, index) => (
+                            <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                              <td className="px-3 py-2 text-sm text-gray-900 dark:text-white font-medium">{tienda.store_name}</td>
+                              <td className="px-3 py-2 text-sm text-blue-600">{formatNumber(tienda.unidades_a_pedir)} unidades</td>
+                              <td className="px-3 py-2 text-sm text-green-600 font-medium">{formatCurrency(tienda.monto_necesario_pedido)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* No Data State */}
+                  {!reabastoPorTiendaLoading && (!reabastoPorTienda || reabastoPorTienda.data.length === 0) && (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">No hay datos disponibles</p>
+                    </div>
+                  )}
                 </div>
               )}
             </>
