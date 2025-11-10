@@ -119,3 +119,22 @@ export interface TopCategoriasExpiracionResponse {
   timestamp: string;
 }
 
+/**
+ * Category statistics (unique products and stores)
+ */
+export interface CategoryStats {
+  category: string;
+  unique_products: number;
+  unique_stores: number;
+}
+
+/**
+ * Category statistics response
+ */
+export interface CategoryStatsResponse {
+  stats: CategoryStats[];
+  total_products: number;
+  total_stores: number;
+  timestamp: string;
+}
+

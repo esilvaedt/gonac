@@ -4,7 +4,8 @@ import {
   CalcularPromocionRequest,
   TopCategoriasExpiracionResponse,
   CategoriaConCaducidad,
-  PromocionItem
+  PromocionItem,
+  CategoryStatsResponse
 } from '@/types/descuento';
 
 interface UseDescuentoOptions {
@@ -222,6 +223,107 @@ export function useCategoriasConCaducidad(options: { limit?: number; autoFetch?:
     loading,
     error,
     refetch: fetchData,
+  };
+}
+
+/**
+ * Hook options for category stats
+ */
+interface UseCategoryStatsOptions {
+  categories?: string[];
+  autoFetch?: boolean;
+}
+
+/**
+ * Hook return type for category stats
+ */
+interface UseCategoryStatsReturn {
+  data: CategoryStatsResponse | null;
+  loading: boolean;
+  error: Error | null;
+  fetchStats: (categories: string[]) => Promise<void>;
+  refetch: () => Promise<void>;
+}
+
+/**
+ * React hook to fetch category statistics (unique products and stores)
+ * 
+ * @example
+ * ```tsx
+ * // Auto-fetch on mount
+ * const { data, loading } = useCategoryStats({
+ *   categories: ['Papas', 'Totopos'],
+ *   autoFetch: true
+ * });
+ * 
+ * // Manual fetch
+ * const { data, loading, fetchStats } = useCategoryStats();
+ * await fetchStats(['Papas', 'Mix', 'Galletas']);
+ * 
+ * // Access results
+ * data?.stats.forEach(stat => {
+ *   console.log(`${stat.category}: ${stat.unique_products} products, ${stat.unique_stores} stores`);
+ * });
+ * ```
+ */
+export function useCategoryStats(
+  options: UseCategoryStatsOptions = {}
+): UseCategoryStatsReturn {
+  const { categories, autoFetch = false } = options;
+
+  const [data, setData] = useState<CategoryStatsResponse | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchStats = useCallback(async (categoriesToFetch: string[]) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('/api/descuento/category-stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categories: categoriesToFetch }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to fetch category stats');
+      }
+
+      setData(result.data);
+    } catch (err) {
+      setError(err as Error);
+      console.error('useCategoryStats error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const refetch = useCallback(async () => {
+    if (categories && categories.length > 0) {
+      await fetchStats(categories);
+    }
+  }, [categories, fetchStats]);
+
+  useEffect(() => {
+    if (autoFetch && categories && categories.length > 0) {
+      fetchStats(categories);
+    }
+  }, [autoFetch, categories, fetchStats]);
+
+  return {
+    data,
+    loading,
+    error,
+    fetchStats,
+    refetch,
   };
 }
 

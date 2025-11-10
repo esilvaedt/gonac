@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { DescuentoParams, DescuentoMetrics, CategoriaConCaducidad } from '@/types/descuento';
+import { DescuentoParams, DescuentoMetrics, CategoriaConCaducidad, CategoryStats } from '@/types/descuento';
 
 /**
  * Descuento Repository
@@ -194,6 +194,106 @@ export class DescuentoRepository {
       .slice(0, limit); // LIMIT
 
     return categorias;
+  }
+
+  /**
+   * Get unique products and stores count by categories
+   * 
+   * SQL equivalent:
+   * SELECT cp.category, 
+   *        count(distinct cp.sku) as unique_products, 
+   *        count(distinct skm.id_store) as unique_stores
+   * FROM gonac.core_cat_product cp
+   * LEFT JOIN gonac.core_store_sku_metrics skm ON skm.sku = cp.sku
+   * WHERE category IN ('Papas', 'Mix')
+   * GROUP BY category
+   * 
+   * @param categories - Array of category names to filter by
+   */
+  async getCategoryStats(categories: string[]): Promise<CategoryStats[]> {
+    if (!categories || categories.length === 0) {
+      throw new Error('Categories array cannot be empty');
+    }
+
+    // Fetch products filtered by categories
+    const { data: productData, error: productError } = await this.supabase
+      .schema('gonac')
+      .from('core_cat_product')
+      .select(`
+        sku,
+        category
+      `)
+      .in('category', categories);
+
+    if (productError) {
+      throw new Error(`Error fetching product data: ${productError.message}`);
+    }
+
+    if (!productData || productData.length === 0) {
+      return categories.map(category => ({
+        category,
+        unique_products: 0,
+        unique_stores: 0,
+      }));
+    }
+
+    // Get all SKUs for the filtered categories
+    const skus = productData.map((item: any) => item.sku);
+
+    // Fetch store metrics for these SKUs
+    const { data: storeData, error: storeError } = await this.supabase
+      .schema('gonac')
+      .from('core_store_sku_metrics')
+      .select('sku, id_store')
+      .in('sku', skus);
+
+    if (storeError) {
+      throw new Error(`Error fetching store metrics: ${storeError.message}`);
+    }
+
+    // Aggregate by category in JavaScript (GROUP BY category)
+    const categoryStatsMap = new Map<string, { products: Set<string>; stores: Set<string> }>();
+
+    // Initialize map for all requested categories
+    categories.forEach(category => {
+      categoryStatsMap.set(category, {
+        products: new Set<string>(),
+        stores: new Set<string>(),
+      });
+    });
+
+    // Add unique products
+    productData.forEach((item: any) => {
+      const category = item.category;
+      if (categoryStatsMap.has(category)) {
+        categoryStatsMap.get(category)!.products.add(item.sku);
+      }
+    });
+
+    // Add unique stores (LEFT JOIN behavior)
+    if (storeData && storeData.length > 0) {
+      storeData.forEach((item: any) => {
+        // Find which category this SKU belongs to
+        const productItem = productData.find((p: any) => p.sku === item.sku);
+        if (productItem) {
+          const category = productItem.category;
+          if (categoryStatsMap.has(category)) {
+            categoryStatsMap.get(category)!.stores.add(item.id_store);
+          }
+        }
+      });
+    }
+
+    // Convert to CategoryStats array
+    const stats: CategoryStats[] = Array.from(categoryStatsMap.entries()).map(
+      ([category, data]) => ({
+        category,
+        unique_products: data.products.size,
+        unique_stores: data.stores.size,
+      })
+    );
+
+    return stats;
   }
 }
 

@@ -7,6 +7,7 @@ import {
   TopCategoriasExpiracionResponse,
   CategoriaConCaducidad,
   PromocionItem,
+  CategoryStatsResponse,
 } from '@/types/descuento';
 
 /**
@@ -268,6 +269,49 @@ export class DescuentoService {
       impacto_formatted: this.formatCurrency(cat.impacto),
       percentage: total_impacto > 0 ? (cat.impacto / total_impacto) * 100 : 0,
     }));
+  }
+
+  /**
+   * Get category statistics (unique products and stores)
+   * 
+   * @param categories - Array of category names to filter by
+   */
+  async getCategoryStats(categories: string[]): Promise<CategoryStatsResponse> {
+    try {
+      if (!categories || categories.length === 0) {
+        throw new Error('Categories array cannot be empty');
+      }
+
+      const stats = await this.repository.getCategoryStats(categories);
+
+      // Calculate totals across all categories
+      const total_products = new Set<string>();
+      const total_stores = new Set<string>();
+
+      // Note: We need to fetch the raw data again to calculate totals properly
+      // because the stats are already aggregated per category
+      const allStats = await Promise.all(
+        categories.map(async (category) => {
+          const categoryStats = stats.find(s => s.category === category);
+          return categoryStats;
+        })
+      );
+
+      // Sum up unique counts
+      const totalProducts = stats.reduce((sum, stat) => sum + stat.unique_products, 0);
+      const totalStores = stats.reduce((sum, stat) => sum + stat.unique_stores, 0);
+
+      return {
+        stats,
+        total_products: totalProducts,
+        total_stores: totalStores,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      throw new Error(
+        `Service error getting category stats: ${(error as Error).message}`
+      );
+    }
   }
 }
 
