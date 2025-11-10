@@ -195,14 +195,10 @@ export class ValorizacionRepository {
       .from('caducidad_detalle')
       .select(`
         segment,
-        last_sale_date,
-        dias_hasta_febrero_2026,
-        final_inventory,
-        venta_promedio_diaria_pesos,
-        venta_promedio_diaria,
-        ventas_esperadas_hasta_febrero,
-        unidades_sobrantes,
+        fecha_caducidad,
+        inventario_remanente,
         impacto,
+        detectado,
         core_cat_store!inner(store_name),
         core_cat_product!inner(product_name)
       `);
@@ -220,14 +216,10 @@ export class ValorizacionRepository {
       segment: String(item.segment || ''),
       store_name: String(item.core_cat_store?.store_name || ''),
       product_name: String(item.core_cat_product?.product_name || ''),
-      last_sale_date: String(item.last_sale_date || ''),
-      dias_hasta_febrero_2026: Number(item.dias_hasta_febrero_2026) || 0,
-      final_inventory: Number(item.final_inventory) || 0,
-      venta_promedio_diaria_pesos: Number(item.venta_promedio_diaria_pesos) || 0,
-      venta_promedio_diaria: Number(item.venta_promedio_diaria) || 0,
-      ventas_esperadas_hasta_febrero: Number(item.ventas_esperadas_hasta_febrero) || 0,
-      unidades_sobrantes: Number(item.unidades_sobrantes) || 0,
+      fecha_caducidad: String(item.fecha_caducidad || ''),
+      inventario_remanente: Number(item.inventario_remanente) || 0,
       impacto: Number(item.impacto) || 0,
+      detectado: String(item.detectado || ''),
     }));
   }
 

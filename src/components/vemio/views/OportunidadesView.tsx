@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { useState } from "react";
-import { useValorizacionSummary } from "@/hooks/useValorizacion";
+import { 
+  useValorizacionSummary, 
+  useAgotadoDetalle, 
+  useCaducidadDetalle, 
+  useSinVentasDetalle 
+} from "@/hooks/useValorizacion";
 
 interface OportunidadesViewProps {
   // Props are now optional since we're using the hook
@@ -12,8 +17,54 @@ type OpportunityType = 'agotado' | 'caducidad' | 'sinVenta';
 export default function OportunidadesView({ data: propData }: OportunidadesViewProps) {
   const [expandedCard, setExpandedCard] = useState<OpportunityType | null>(null);
 
-  // Fetch real data from the database
+  // Fetch summary data from the database
   const { data: valorizacionData, loading, error } = useValorizacionSummary();
+  
+  // Fetch detailed data for each opportunity type (only fetch when needed, but load on mount for better UX)
+  const { data: agotadoDetalleData, loading: agotadoLoading } = useAgotadoDetalle();
+  const { data: caducidadDetalleData, loading: caducidadLoading } = useCaducidadDetalle();
+  const { data: sinVentasDetalleData, loading: sinVentasLoading } = useSinVentasDetalle();
+
+  // Transform detailed data to match the expected format for the table
+  const transformAgotadoData = (data: any) => {
+    if (!data || !Array.isArray(data)) return [];
+    return data.map((item: any, index: number) => ({
+      id: `agotado-${index}`,
+      tienda: item.store_name,
+      sku: item.product_name,
+      diasInventario: item.dias_inventario,
+      segmentoTienda: item.segment.toLowerCase(),
+      impactoEstimado: item.impacto,
+      fechaDeteccion: item.detectado
+    }));
+  };
+
+  const transformCaducidadData = (data: any) => {
+    if (!data || !Array.isArray(data)) return [];
+    return data.map((item: any, index: number) => ({
+      id: `caducidad-${index}`,
+      tienda: item.store_name,
+      sku: item.product_name,
+      inventarioRemanente: item.inventario_remanente,
+      fechaCaducidad: item.fecha_caducidad,
+      segmentoTienda: item.segment.toLowerCase(),
+      impactoEstimado: item.impacto,
+      fechaDeteccion: item.detectado
+    }));
+  };
+
+  const transformSinVentasData = (data: any) => {
+    if (!data || !Array.isArray(data)) return [];
+    return data.map((item: any, index: number) => ({
+      id: `sinventa-${index}`,
+      tienda: item.store_name,
+      sku: item.product_name,
+      diasSinVenta: 0, // Not provided in API
+      ultimaVenta: new Date().toISOString(), // Not provided in API
+      impactoEstimado: item.impacto,
+      fechaDeteccion: new Date().toISOString() // Not provided in API
+    }));
+  };
 
   // Use real data if available, otherwise fall back to prop data
   // If there's an error, we'll use propData as fallback (graceful degradation)
@@ -21,17 +72,17 @@ export default function OportunidadesView({ data: propData }: OportunidadesViewP
     agotado: {
       impacto: valorizacionData.agotado.impacto,
       tiendas: valorizacionData.agotado.tiendas,
-      registros: propData?.agotado?.registros || [] // Use mock registros if available
+      registros: agotadoDetalleData ? transformAgotadoData(agotadoDetalleData) : (propData?.agotado?.registros || [])
     },
     caducidad: {
       impacto: valorizacionData.caducidad.impacto,
       tiendas: valorizacionData.caducidad.tiendas,
-      registros: propData?.caducidad?.registros || [] // Use mock registros if available
+      registros: caducidadDetalleData ? transformCaducidadData(caducidadDetalleData) : (propData?.caducidad?.registros || [])
     },
     sinVenta: {
       impacto: valorizacionData.sinVentas.impacto,
       tiendas: valorizacionData.sinVentas.tiendas,
-      registros: propData?.sinVenta?.registros || [] // Use mock registros if available
+      registros: sinVentasDetalleData ? transformSinVentasData(sinVentasDetalleData) : (propData?.sinVenta?.registros || [])
     }
   } : propData;
 
@@ -137,8 +188,21 @@ export default function OportunidadesView({ data: propData }: OportunidadesViewP
     }
   };
 
+  const getDetailLoading = (type: OpportunityType) => {
+    switch (type) {
+      case 'agotado':
+        return agotadoLoading;
+      case 'caducidad':
+        return caducidadLoading;
+      case 'sinVenta':
+        return sinVentasLoading;
+    }
+  };
+
   const renderOpportunityCard = (type: OpportunityType, opportunityData: any) => {
     const colors = getCardColor(type);
+    const isDetailLoading = getDetailLoading(type);
+    
     return (
       <div key={type} className={`rounded-lg shadow-sm border-2 ${colors.bg} ${colors.border}`}>
         {/* Card Header */}
@@ -172,7 +236,15 @@ export default function OportunidadesView({ data: propData }: OportunidadesViewP
           </div>
 
           {/* Ver Detalle Button */}
-          {opportunityData.registros && opportunityData.registros.length > 0 ? (
+          {isDetailLoading ? (
+            <button
+              disabled
+              className="w-full flex items-center justify-center px-4 py-2 bg-blue-400 text-white rounded-lg cursor-not-allowed"
+            >
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Cargando detalles...
+            </button>
+          ) : opportunityData.registros && opportunityData.registros.length > 0 ? (
             <button
               onClick={() => toggleExpanded(type)}
               className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -239,22 +311,21 @@ export default function OportunidadesView({ data: propData }: OportunidadesViewP
                         </th>
                       </>
                     )}
-                    {type === 'sinVenta' && (
-                      <>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Días Sin Venta
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Última Venta
-                        </th>
-                      </>
+                    {type !== 'sinVenta' && (
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Impacto
+                      </th>
                     )}
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Impacto
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Detectado
-                    </th>
+                    {type === 'sinVenta' && (
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Impacto
+                      </th>
+                    )}
+                    {type !== 'sinVenta' && (
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Detectado
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
@@ -293,22 +364,21 @@ export default function OportunidadesView({ data: propData }: OportunidadesViewP
                           </td>
                         </>
                       )}
-                      {type === 'sinVenta' && (
-                        <>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">
-                            {registro.diasSinVenta} días
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {new Date(registro.ultimaVenta).toLocaleDateString('es-MX')}
-                          </td>
-                        </>
+                      {type !== 'sinVenta' && (
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                          {formatCurrency(registro.impactoEstimado)}
+                        </td>
                       )}
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                        {formatCurrency(registro.impactoEstimado)}
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(registro.fechaDeteccion).toLocaleDateString('es-MX')}
-                      </td>
+                      {type === 'sinVenta' && (
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                          {formatCurrency(registro.impactoEstimado)}
+                        </td>
+                      )}
+                      {type !== 'sinVenta' && (
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(registro.fechaDeteccion).toLocaleDateString('es-MX')}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

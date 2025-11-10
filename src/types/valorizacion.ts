@@ -63,14 +63,10 @@ export interface CaducidadDetalle {
   segment: string;
   store_name: string;
   product_name: string;
-  last_sale_date: string;
-  dias_hasta_febrero_2026: number;
-  final_inventory: number;
-  venta_promedio_diaria_pesos: number;
-  venta_promedio_diaria: number;
-  ventas_esperadas_hasta_febrero: number;
-  unidades_sobrantes: number;
+  fecha_caducidad: string;
+  inventario_remanente: number;
   impacto: number;
+  detectado: string;
 }
 
 /**
