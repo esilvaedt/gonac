@@ -1,10 +1,14 @@
 import { VemioData } from "@/data/vemio-mock-data";
+import { useMetricasFormatted } from "@/hooks/useMetricas";
 
 interface ResumenViewProps {
   data: VemioData["resumen"];
 }
 
 export default function ResumenView({ data }: ResumenViewProps) {
+  // Fetch real metrics data
+  const { data: metricasData, loading, error } = useMetricasFormatted({ autoFetch: true });
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
@@ -31,8 +35,35 @@ export default function ResumenView({ data }: ResumenViewProps) {
     return 'from-red-500 to-red-600';
   };
 
+  // Use real data if available, otherwise fallback to mock
+  const ventasTotalesPesos = metricasData?.ventas_totales_pesos ?? data.ventasTotales.valor;
+  const ventasTotalesUnidades = metricasData?.ventas_totales_unidades ?? data.ventasTotales.unidadesVendidas;
+  const crecimiento = metricasData?.crecimiento_vs_semana_anterior_pct ?? data.ventasTotales.crecimientoVsSemanaAnterior;
+  const sellThroughPct = metricasData?.sell_through_pct ?? data.sellThrough.porcentaje;
+  const coberturaPct = metricasData?.cobertura_pct ?? data.metricas.coberturaNumerica.porcentaje;
+  const coberturaPonderadaPct = metricasData?.cobertura_ponderada_pct ?? data.metricas.coberturaPonderada.porcentaje;
+  const diasInventario = metricasData?.promedio_dias_inventario ?? data.metricas.diasInventario.promedio;
+  const porcentajeAgotados = metricasData?.porcentaje_agotados_pct ?? data.metricas.tasaQuiebre.porcentaje;
+  const ventaPromedioDiaria = metricasData?.avg_venta_promedio_diaria ?? data.metricas.ventaPromedioOutlet.porcentaje;
+
   return (
     <div className="space-y-6">
+      {/* Loading State */}
+      {loading && (
+        <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800 text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Cargando métricas...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="rounded-lg bg-red-50 dark:bg-red-900/20 p-6 shadow-sm border border-red-200 dark:border-red-800">
+          <p className="text-sm text-red-600 dark:text-red-400">Error al cargar métricas: {error.message}</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">Mostrando datos de ejemplo</p>
+        </div>
+      )}
+
       {/* Main KPIs */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Ventas Totales Card */}
@@ -42,10 +73,10 @@ export default function ResumenView({ data }: ResumenViewProps) {
               <h3 className="text-lg font-medium opacity-90">Ventas Totales</h3>
               <div className="mt-2">
                 <div className="text-3xl font-bold">
-                  {formatCurrency(data.ventasTotales.valor)}
+                  {formatCurrency(ventasTotalesPesos)}
                 </div>
                 <div className="text-sm opacity-90 mt-1">
-                  {formatNumber(data.ventasTotales.unidadesVendidas)} unidades vendidas
+                  {formatNumber(ventasTotalesUnidades)} unidades vendidas
                 </div>
               </div>
             </div>
@@ -60,10 +91,17 @@ export default function ResumenView({ data }: ResumenViewProps) {
               <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
               </svg>
-              +{data.ventasTotales.crecimientoVsSemanaAnterior}%
+              +{crecimiento.toFixed(1)}%
             </div>
             <span className="ml-2 text-sm opacity-90">vs semana anterior</span>
           </div>
+          {metricasData && (
+            <div className="mt-2">
+              <span className="text-xs font-medium text-green-100 bg-green-600/30 px-2 py-1 rounded-full">
+                ✓ Datos en vivo
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Sell-Through Card */}
@@ -73,7 +111,7 @@ export default function ResumenView({ data }: ResumenViewProps) {
               <h3 className="text-lg font-medium opacity-90">Sell-Through</h3>
               <div className="mt-2">
                 <div className="text-3xl font-bold">
-                  {data.sellThrough.porcentaje}%
+                  {sellThroughPct.toFixed(1)}%
                 </div>
                 <div className="text-sm opacity-90 mt-1">
                   vs {data.sellThrough.objetivo}% objetivo
@@ -94,10 +132,17 @@ export default function ResumenView({ data }: ResumenViewProps) {
             <div className="mt-2 h-2 rounded-full bg-white/20">
               <div
                 className="h-2 rounded-full bg-white"
-                style={{ width: `${Math.min((data.sellThrough.porcentaje / data.sellThrough.objetivo) * 100, 100)}%` }}
+                style={{ width: `${Math.min((sellThroughPct / data.sellThrough.objetivo) * 100, 100)}%` }}
               ></div>
             </div>
           </div>
+          {metricasData && (
+            <div className="mt-2">
+              <span className="text-xs font-medium text-blue-100 bg-blue-600/30 px-2 py-1 rounded-full">
+                ✓ Datos en vivo
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Riesgo y Oportunidades Card */}
@@ -142,7 +187,7 @@ export default function ResumenView({ data }: ResumenViewProps) {
       {/* Additional Metrics */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
         {/* Cobertura Numérica */}
-        <div className={`rounded-lg bg-gradient-to-br ${getCardColor(data.metricas.coberturaNumerica.porcentaje, data.metricas.coberturaNumerica.objetivo)} p-4 text-white shadow-lg`}>
+        <div className={`rounded-lg bg-gradient-to-br ${getCardColor(coberturaPct, data.metricas.coberturaNumerica.objetivo)} p-4 text-white shadow-lg`}>
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-medium opacity-90">Cobertura Numérica</h4>
             <svg className="h-5 w-5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,21 +195,21 @@ export default function ResumenView({ data }: ResumenViewProps) {
             </svg>
           </div>
           <div className="text-2xl font-bold mb-1">
-            {data.metricas.coberturaNumerica.porcentaje}%
+            {coberturaPct.toFixed(1)}%
           </div>
           <div className="text-xs opacity-90 mb-3">
             vs {data.metricas.coberturaNumerica.objetivo}% objetivo
           </div>
           <div className="h-1.5 rounded-full bg-white/20">
             <div
-              className={`h-1.5 rounded-full ${getProgressColor(data.metricas.coberturaNumerica.porcentaje, data.metricas.coberturaNumerica.objetivo)}`}
-              style={{ width: `${Math.min((data.metricas.coberturaNumerica.porcentaje / data.metricas.coberturaNumerica.objetivo) * 100, 100)}%` }}
+              className={`h-1.5 rounded-full ${getProgressColor(coberturaPct, data.metricas.coberturaNumerica.objetivo)}`}
+              style={{ width: `${Math.min((coberturaPct / data.metricas.coberturaNumerica.objetivo) * 100, 100)}%` }}
             ></div>
           </div>
         </div>
 
         {/* Cobertura Ponderada */}
-        <div className={`rounded-lg bg-gradient-to-br ${getCardColor(data.metricas.coberturaPonderada.porcentaje, data.metricas.coberturaPonderada.objetivo)} p-4 text-white shadow-lg`}>
+        <div className={`rounded-lg bg-gradient-to-br ${getCardColor(coberturaPonderadaPct, data.metricas.coberturaPonderada.objetivo)} p-4 text-white shadow-lg`}>
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-medium opacity-90">Cobertura Ponderada</h4>
             <svg className="h-5 w-5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,21 +217,21 @@ export default function ResumenView({ data }: ResumenViewProps) {
             </svg>
           </div>
           <div className="text-2xl font-bold mb-1">
-            {data.metricas.coberturaPonderada.porcentaje}%
+            {coberturaPonderadaPct.toFixed(1)}%
           </div>
           <div className="text-xs opacity-90 mb-3">
             vs {data.metricas.coberturaPonderada.objetivo}% objetivo
           </div>
           <div className="h-1.5 rounded-full bg-white/20">
             <div
-              className={`h-1.5 rounded-full ${getProgressColor(data.metricas.coberturaPonderada.porcentaje, data.metricas.coberturaPonderada.objetivo)}`}
-              style={{ width: `${Math.min((data.metricas.coberturaPonderada.porcentaje / data.metricas.coberturaPonderada.objetivo) * 100, 100)}%` }}
+              className={`h-1.5 rounded-full ${getProgressColor(coberturaPonderadaPct, data.metricas.coberturaPonderada.objetivo)}`}
+              style={{ width: `${Math.min((coberturaPonderadaPct / data.metricas.coberturaPonderada.objetivo) * 100, 100)}%` }}
             ></div>
           </div>
         </div>
 
         {/* Días de Inventario */}
-        <div className={`rounded-lg bg-gradient-to-br ${getCardColor(data.metricas.diasInventario.objetivo, data.metricas.diasInventario.promedio)} p-4 text-white shadow-lg`}>
+        <div className={`rounded-lg bg-gradient-to-br ${getCardColor(data.metricas.diasInventario.objetivo, diasInventario)} p-4 text-white shadow-lg`}>
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-medium opacity-90">Días de Inventario</h4>
             <svg className="h-5 w-5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,21 +239,21 @@ export default function ResumenView({ data }: ResumenViewProps) {
             </svg>
           </div>
           <div className="text-2xl font-bold mb-1">
-            {data.metricas.diasInventario.promedio}
+            {diasInventario.toFixed(1)}
           </div>
           <div className="text-xs opacity-90 mb-3">
             vs {data.metricas.diasInventario.objetivo} objetivo
           </div>
           <div className="h-1.5 rounded-full bg-white/20">
             <div
-              className={`h-1.5 rounded-full ${getProgressColor(data.metricas.diasInventario.objetivo, data.metricas.diasInventario.promedio)}`}
-              style={{ width: `${Math.min((data.metricas.diasInventario.objetivo / data.metricas.diasInventario.promedio) * 100, 100)}%` }}
+              className={`h-1.5 rounded-full ${getProgressColor(data.metricas.diasInventario.objetivo, diasInventario)}`}
+              style={{ width: `${Math.min((data.metricas.diasInventario.objetivo / diasInventario) * 100, 100)}%` }}
             ></div>
           </div>
         </div>
 
-        {/* Tasa de Quiebre */}
-        <div className={`rounded-lg bg-gradient-to-br ${getCardColor(100 - data.metricas.tasaQuiebre.porcentaje, 100 - data.metricas.tasaQuiebre.objetivo)} p-4 text-white shadow-lg`}>
+        {/* Tasa de Quiebre (Agotados) */}
+        <div className={`rounded-lg bg-gradient-to-br ${getCardColor(100 - porcentajeAgotados, 100 - data.metricas.tasaQuiebre.objetivo)} p-4 text-white shadow-lg`}>
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-medium opacity-90">Tasa de Quiebre</h4>
             <svg className="h-5 w-5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -216,37 +261,37 @@ export default function ResumenView({ data }: ResumenViewProps) {
             </svg>
           </div>
           <div className="text-2xl font-bold mb-1">
-            {data.metricas.tasaQuiebre.porcentaje}%
+            {porcentajeAgotados.toFixed(1)}%
           </div>
           <div className="text-xs opacity-90 mb-3">
             vs {data.metricas.tasaQuiebre.objetivo}% objetivo
           </div>
           <div className="h-1.5 rounded-full bg-white/20">
             <div
-              className={`h-1.5 rounded-full ${getProgressColor(100 - data.metricas.tasaQuiebre.porcentaje, 100 - data.metricas.tasaQuiebre.objetivo)}`}
-              style={{ width: `${Math.min(((100 - data.metricas.tasaQuiebre.porcentaje) / (100 - data.metricas.tasaQuiebre.objetivo)) * 100, 100)}%` }}
+              className={`h-1.5 rounded-full ${getProgressColor(100 - porcentajeAgotados, 100 - data.metricas.tasaQuiebre.objetivo)}`}
+              style={{ width: `${Math.min(((100 - porcentajeAgotados) / (100 - data.metricas.tasaQuiebre.objetivo)) * 100, 100)}%` }}
             ></div>
           </div>
         </div>
 
-        {/* Venta Promedio por Outlet */}
-        <div className={`rounded-lg bg-gradient-to-br ${getCardColor(data.metricas.ventaPromedioOutlet.porcentaje, data.metricas.ventaPromedioOutlet.objetivo)} p-4 text-white shadow-lg`}>
+        {/* Venta Promedio Diaria */}
+        <div className={`rounded-lg bg-gradient-to-br ${getCardColor(ventaPromedioDiaria, data.metricas.ventaPromedioOutlet.objetivo)} p-4 text-white shadow-lg`}>
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-medium opacity-90">Venta Promedio Outlet</h4>
+            <h4 className="text-sm font-medium opacity-90">Venta Promedio Diaria</h4>
             <svg className="h-5 w-5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
           </div>
           <div className="text-2xl font-bold mb-1">
-            {data.metricas.ventaPromedioOutlet.porcentaje}%
+            {formatCurrency(ventaPromedioDiaria)}
           </div>
           <div className="text-xs opacity-90 mb-3">
-            vs {data.metricas.ventaPromedioOutlet.objetivo}% objetivo
+            promedio por tienda
           </div>
           <div className="h-1.5 rounded-full bg-white/20">
             <div
-              className={`h-1.5 rounded-full ${getProgressColor(data.metricas.ventaPromedioOutlet.porcentaje, data.metricas.ventaPromedioOutlet.objetivo)}`}
-              style={{ width: `${Math.min((data.metricas.ventaPromedioOutlet.porcentaje / data.metricas.ventaPromedioOutlet.objetivo) * 100, 100)}%` }}
+              className={`h-1.5 rounded-full ${getProgressColor(ventaPromedioDiaria, data.metricas.ventaPromedioOutlet.objetivo)}`}
+              style={{ width: `${Math.min((ventaPromedioDiaria / data.metricas.ventaPromedioOutlet.objetivo) * 100, 100)}%` }}
             ></div>
           </div>
         </div>
