@@ -38,10 +38,10 @@ export default function ResumenView({ data }: ResumenViewProps) {
   // Use real data if available, otherwise fallback to mock
   const ventasTotalesPesos = metricasData?.ventas_totales_pesos ?? data.ventasTotales.valor;
   const ventasTotalesUnidades = metricasData?.ventas_totales_unidades ?? data.ventasTotales.unidadesVendidas;
-  const crecimiento = metricasData?.crecimiento_vs_semana_anterior_pct ?? data.ventasTotales.crecimientoVsSemanaAnterior;
-  const sellThroughPct = metricasData?.sell_through_pct ?? data.sellThrough.porcentaje;
-  const coberturaPct = metricasData?.cobertura_pct ?? data.metricas.coberturaNumerica.porcentaje;
-  const coberturaPonderadaPct = metricasData?.cobertura_ponderada_pct ?? data.metricas.coberturaPonderada.porcentaje;
+  const crecimiento = (metricasData?.crecimiento_vs_semana_anterior_pct ?? data.ventasTotales.crecimientoVsSemanaAnterior) * 100;
+  const sellThroughPct = (metricasData?.sell_through_pct ?? data.sellThrough.porcentaje) * 100;
+  const coberturaPct = (metricasData?.cobertura_pct ?? data.metricas.coberturaNumerica.porcentaje) * 100;
+  const coberturaPonderadaPct = (metricasData?.cobertura_ponderada_pct ?? data.metricas.coberturaPonderada.porcentaje) * 100;
   const diasInventario = metricasData?.promedio_dias_inventario ?? data.metricas.diasInventario.promedio;
   const porcentajeAgotados = metricasData?.porcentaje_agotados_pct ?? data.metricas.tasaQuiebre.porcentaje;
   const ventaPromedioDiaria = metricasData?.avg_venta_promedio_diaria ?? data.metricas.ventaPromedioOutlet.porcentaje;
