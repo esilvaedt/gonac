@@ -35,3 +35,68 @@ export interface ValorizacionSummary {
   };
 }
 
+/**
+ * Detail record for Agotado opportunities
+ */
+export interface AgotadoDetalle {
+  segment: string;
+  store_name: string;
+  product_name: string;
+  dias_inventario: number;
+  impacto: number;
+  detectado: string;
+}
+
+/**
+ * Response for Agotado details
+ */
+export interface AgotadoDetalleResponse {
+  data: AgotadoDetalle[];
+  total: number;
+  timestamp: string;
+}
+
+/**
+ * Detail record for Caducidad opportunities
+ */
+export interface CaducidadDetalle {
+  segment: string;
+  store_name: string;
+  product_name: string;
+  last_sale_date: string;
+  dias_hasta_febrero_2026: number;
+  final_inventory: number;
+  venta_promedio_diaria_pesos: number;
+  venta_promedio_diaria: number;
+  ventas_esperadas_hasta_febrero: number;
+  unidades_sobrantes: number;
+  impacto: number;
+}
+
+/**
+ * Response for Caducidad details
+ */
+export interface CaducidadDetalleResponse {
+  data: CaducidadDetalle[];
+  total: number;
+  timestamp: string;
+}
+
+/**
+ * Detail record for Sin Ventas opportunities
+ */
+export interface SinVentasDetalle {
+  store_name: string;
+  product_name: string;
+  impacto: number;
+}
+
+/**
+ * Response for Sin Ventas details
+ */
+export interface SinVentasDetalleResponse {
+  data: SinVentasDetalle[];
+  total: number;
+  timestamp: string;
+}
+

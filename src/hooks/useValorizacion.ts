@@ -1,7 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ValorizacionResponse, ValorizacionSummary, ValorizacionItem } from '@/types/valorizacion';
+import { 
+  ValorizacionResponse, 
+  ValorizacionSummary, 
+  ValorizacionItem,
+  AgotadoDetalleResponse,
+  CaducidadDetalleResponse,
+  SinVentasDetalleResponse
+} from '@/types/valorizacion';
 
-type FormatType = 'default' | 'summary' | 'percentages' | 'critical';
+type FormatType = 'default' | 'summary' | 'percentages' | 'critical' | 'agotado-detalle' | 'caducidad-detalle' | 'sin-ventas-detalle';
 
 interface UseValorizacionOptions {
   format?: FormatType;
@@ -129,5 +136,145 @@ export function useValorizacionPercentages() {
  */
 export function useValorizacionCritical() {
   return useValorizacion<ValorizacionItem>({ format: 'critical' });
+}
+
+/**
+ * Hook for detailed Agotado opportunities
+ * Returns store and product information for out-of-stock items
+ * 
+ * @example
+ * ```tsx
+ * const { data, loading, error, refetch } = useAgotadoDetalle();
+ * 
+ * if (loading) return <div>Loading...</div>;
+ * if (error) return <div>Error: {error.message}</div>;
+ * 
+ * return (
+ *   <table>
+ *     <thead>
+ *       <tr>
+ *         <th>Segment</th>
+ *         <th>Store</th>
+ *         <th>Product</th>
+ *         <th>Days Inventory</th>
+ *         <th>Impact</th>
+ *         <th>Detected</th>
+ *       </tr>
+ *     </thead>
+ *     <tbody>
+ *       {data?.data.map((item, index) => (
+ *         <tr key={index}>
+ *           <td>{item.segment}</td>
+ *           <td>{item.store_name}</td>
+ *           <td>{item.product_name}</td>
+ *           <td>{item.dias_inventario}</td>
+ *           <td>${item.impacto}</td>
+ *           <td>{item.detectado}</td>
+ *         </tr>
+ *       ))}
+ *     </tbody>
+ *   </table>
+ * );
+ * ```
+ */
+export function useAgotadoDetalle(options: { autoFetch?: boolean } = {}) {
+  const { autoFetch = true } = options;
+  
+  return useValorizacion<AgotadoDetalleResponse>({ 
+    format: 'agotado-detalle',
+    autoFetch 
+  });
+}
+
+/**
+ * Hook for detailed Caducidad opportunities
+ * Returns store and product information for near-expiration items
+ * 
+ * @example
+ * ```tsx
+ * const { data, loading, error, refetch } = useCaducidadDetalle();
+ * 
+ * if (loading) return <div>Loading...</div>;
+ * if (error) return <div>Error: {error.message}</div>;
+ * 
+ * return (
+ *   <table>
+ *     <thead>
+ *       <tr>
+ *         <th>Segment</th>
+ *         <th>Store</th>
+ *         <th>Product</th>
+ *         <th>Last Sale Date</th>
+ *         <th>Days Until Feb 2026</th>
+ *         <th>Final Inventory</th>
+ *         <th>Impact</th>
+ *       </tr>
+ *     </thead>
+ *     <tbody>
+ *       {data?.data.map((item, index) => (
+ *         <tr key={index}>
+ *           <td>{item.segment}</td>
+ *           <td>{item.store_name}</td>
+ *           <td>{item.product_name}</td>
+ *           <td>{item.last_sale_date}</td>
+ *           <td>{item.dias_hasta_febrero_2026}</td>
+ *           <td>{item.final_inventory}</td>
+ *           <td>${item.impacto}</td>
+ *         </tr>
+ *       ))}
+ *     </tbody>
+ *   </table>
+ * );
+ * ```
+ */
+export function useCaducidadDetalle(options: { autoFetch?: boolean } = {}) {
+  const { autoFetch = true } = options;
+  
+  return useValorizacion<CaducidadDetalleResponse>({ 
+    format: 'caducidad-detalle',
+    autoFetch 
+  });
+}
+
+/**
+ * Hook for detailed Sin Ventas opportunities
+ * Returns store and product information for non-selling items
+ * 
+ * @example
+ * ```tsx
+ * const { data, loading, error, refetch } = useSinVentasDetalle();
+ * 
+ * if (loading) return <div>Loading...</div>;
+ * if (error) return <div>Error: {error.message}</div>;
+ * 
+ * return (
+ *   <table>
+ *     <thead>
+ *       <tr>
+ *         <th>Store</th>
+ *         <th>Product</th>
+ *         <th>Impact</th>
+ *       </tr>
+ *     </thead>
+ *     <tbody>
+ *       {data?.data.map((item, index) => (
+ *         <tr key={index}>
+ *           <td>{item.store_name}</td>
+ *           <td>{item.product_name}</td>
+ *           <td>${item.impacto}</td>
+ *         </tr>
+ *       ))}
+ *     </tbody>
+ *   </table>
+ * );
+ * ```
+ */
+export function useSinVentasDetalle(options: { autoFetch?: boolean } = {}) {
+  const { autoFetch = true } = options;
+  
+  return useValorizacion<SinVentasDetalleResponse>({ 
+    format: 'sin-ventas-detalle',
+    autoFetch 
+  });
 }
 

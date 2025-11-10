@@ -1,5 +1,10 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { ValorizacionItem } from '@/types/valorizacion';
+import { 
+  ValorizacionItem, 
+  AgotadoDetalle,
+  CaducidadDetalle,
+  SinVentasDetalle 
+} from '@/types/valorizacion';
 
 /**
  * Valorizacion Repository
@@ -142,6 +147,118 @@ export class ValorizacionRepository {
       default:
         throw new Error(`Invalid valorizacion type: ${type}`);
     }
+  }
+
+  /**
+   * Get detailed Agotado opportunities with store and product information
+   * Joins agotamiento_detalle with core_cat_store and core_cat_product
+   */
+  async getAgotadoDetalle(): Promise<AgotadoDetalle[]> {
+    const { data, error } = await this.supabase
+      .schema('gonac')
+      .from('agotamiento_detalle')
+      .select(`
+        segment,
+        dias_inventario,
+        impacto,
+        detectado,
+        core_cat_store!inner(store_name),
+        core_cat_product!inner(product_name)
+      `);
+
+    if (error) {
+      throw new Error(`Error fetching agotado details: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Transform the nested structure to flat objects
+    return data.map((item: any) => ({
+      segment: String(item.segment || ''),
+      store_name: String(item.core_cat_store?.store_name || ''),
+      product_name: String(item.core_cat_product?.product_name || ''),
+      dias_inventario: Number(item.dias_inventario) || 0,
+      impacto: Number(item.impacto) || 0,
+      detectado: String(item.detectado || ''),
+    }));
+  }
+
+  /**
+   * Get detailed Caducidad opportunities with store and product information
+   * Joins caducidad_detalle with core_cat_store and core_cat_product
+   */
+  async getCaducidadDetalle(): Promise<CaducidadDetalle[]> {
+    const { data, error } = await this.supabase
+      .schema('gonac')
+      .from('caducidad_detalle')
+      .select(`
+        segment,
+        last_sale_date,
+        dias_hasta_febrero_2026,
+        final_inventory,
+        venta_promedio_diaria_pesos,
+        venta_promedio_diaria,
+        ventas_esperadas_hasta_febrero,
+        unidades_sobrantes,
+        impacto,
+        core_cat_store!inner(store_name),
+        core_cat_product!inner(product_name)
+      `);
+
+    if (error) {
+      throw new Error(`Error fetching caducidad details: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Transform the nested structure to flat objects
+    return data.map((item: any) => ({
+      segment: String(item.segment || ''),
+      store_name: String(item.core_cat_store?.store_name || ''),
+      product_name: String(item.core_cat_product?.product_name || ''),
+      last_sale_date: String(item.last_sale_date || ''),
+      dias_hasta_febrero_2026: Number(item.dias_hasta_febrero_2026) || 0,
+      final_inventory: Number(item.final_inventory) || 0,
+      venta_promedio_diaria_pesos: Number(item.venta_promedio_diaria_pesos) || 0,
+      venta_promedio_diaria: Number(item.venta_promedio_diaria) || 0,
+      ventas_esperadas_hasta_febrero: Number(item.ventas_esperadas_hasta_febrero) || 0,
+      unidades_sobrantes: Number(item.unidades_sobrantes) || 0,
+      impacto: Number(item.impacto) || 0,
+    }));
+  }
+
+  /**
+   * Get detailed Sin Ventas opportunities with store and product information
+   * Joins sin_ventas_detalle with core_cat_store and core_cat_product
+   */
+  async getSinVentasDetalle(): Promise<SinVentasDetalle[]> {
+    const { data, error } = await this.supabase
+      .schema('gonac')
+      .from('sin_ventas_detalle')
+      .select(`
+        impacto,
+        core_cat_store!inner(store_name),
+        core_cat_product!inner(product_name)
+      `);
+
+    if (error) {
+      throw new Error(`Error fetching sin ventas details: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Transform the nested structure to flat objects
+    return data.map((item: any) => ({
+      store_name: String(item.core_cat_store?.store_name || ''),
+      product_name: String(item.core_cat_product?.product_name || ''),
+      impacto: Number(item.impacto) || 0,
+    }));
   }
 }
 

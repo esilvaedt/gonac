@@ -1,5 +1,12 @@
 import { ValorizacionRepository } from '@/repositories/valorizacion.repository';
-import { ValorizacionResponse, ValorizacionSummary, ValorizacionItem } from '@/types/valorizacion';
+import { 
+  ValorizacionResponse, 
+  ValorizacionSummary, 
+  ValorizacionItem,
+  AgotadoDetalleResponse,
+  CaducidadDetalleResponse,
+  SinVentasDetalleResponse
+} from '@/types/valorizacion';
 
 /**
  * Valorizacion Service
@@ -111,6 +118,63 @@ export class ValorizacionService {
       style: 'currency',
       currency,
     }).format(impacto);
+  }
+
+  /**
+   * Get detailed Agotado opportunities with store and product information
+   */
+  async getAgotadoDetalle(): Promise<AgotadoDetalleResponse> {
+    try {
+      const data = await this.repository.getAgotadoDetalle();
+
+      return {
+        data,
+        total: data.length,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      throw new Error(
+        `Service error getting agotado details: ${(error as Error).message}`
+      );
+    }
+  }
+
+  /**
+   * Get detailed Caducidad opportunities with store and product information
+   */
+  async getCaducidadDetalle(): Promise<CaducidadDetalleResponse> {
+    try {
+      const data = await this.repository.getCaducidadDetalle();
+
+      return {
+        data,
+        total: data.length,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      throw new Error(
+        `Service error getting caducidad details: ${(error as Error).message}`
+      );
+    }
+  }
+
+  /**
+   * Get detailed Sin Ventas opportunities with store and product information
+   */
+  async getSinVentasDetalle(): Promise<SinVentasDetalleResponse> {
+    try {
+      const data = await this.repository.getSinVentasDetalle();
+
+      return {
+        data,
+        total: data.length,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      throw new Error(
+        `Service error getting sin ventas details: ${(error as Error).message}`
+      );
+    }
   }
 }
 

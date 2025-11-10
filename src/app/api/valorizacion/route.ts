@@ -6,18 +6,55 @@ import { ValorizacionService } from '@/services/valorizacion.service';
 /**
  * GET /api/valorizacion
  * Fetches valorizacion data (Agotado, Caducidad, Sin Ventas)
+ * 
+ * Query Parameters:
+ * - format: 'default' | 'summary' | 'percentages' | 'critical' | 'agotado-detalle' | 'caducidad-detalle' | 'sin-ventas-detalle'
+ * - type: 'Agotado' | 'Caducidad' | 'Sin Ventas' (optional)
+ * 
+ * Examples:
+ * - GET /api/valorizacion (default format)
+ * - GET /api/valorizacion?format=summary
+ * - GET /api/valorizacion?format=agotado-detalle
+ * - GET /api/valorizacion?format=caducidad-detalle
+ * - GET /api/valorizacion?format=sin-ventas-detalle
+ * - GET /api/valorizacion?type=Agotado
  */
 export async function GET(request: NextRequest) {
   try {
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
-    const format = searchParams.get('format') || 'default'; // default | summary | percentages
+    const format = searchParams.get('format') || 'default';
     const type = searchParams.get('type') as 'Agotado' | 'Caducidad' | 'Sin Ventas' | null;
 
     // Initialize repository and service
     const supabase = createServerSupabaseClient();
     const repository = new ValorizacionRepository(supabase);
     const service = new ValorizacionService(repository);
+
+    // Handle detail formats
+    if (format === 'agotado-detalle') {
+      const data = await service.getAgotadoDetalle();
+      return NextResponse.json({
+        success: true,
+        ...data,
+      });
+    }
+
+    if (format === 'caducidad-detalle') {
+      const data = await service.getCaducidadDetalle();
+      return NextResponse.json({
+        success: true,
+        ...data,
+      });
+    }
+
+    if (format === 'sin-ventas-detalle') {
+      const data = await service.getSinVentasDetalle();
+      return NextResponse.json({
+        success: true,
+        ...data,
+      });
+    }
 
     // Handle specific type request
     if (type) {
