@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   PromotoriaSummaryResponse,
-  PromotoriaAggregateResponse,
+  PromotoriaTiendaResponse,
   PromotoriaProductsResponse,
 } from '@/services/promotoria.service';
 
@@ -70,14 +70,14 @@ export function usePromotoriaSummary(
 }
 
 /**
- * Hook for fetching promotoria aggregate data
+ * Hook for fetching single store with highest risk
  */
-export function usePromotoriaAggregate(
+export function usePromotoriaTienda(
   options: UsePromotoriaOptions = {}
-): UsePromotoriaReturn<PromotoriaAggregateResponse> {
+): UsePromotoriaReturn<PromotoriaTiendaResponse> {
   const { autoFetch = true } = options;
 
-  const [data, setData] = useState<PromotoriaAggregateResponse | null>(null);
+  const [data, setData] = useState<PromotoriaTiendaResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(autoFetch);
   const [error, setError] = useState<Error | null>(null);
 
@@ -95,13 +95,13 @@ export function usePromotoriaAggregate(
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.message || 'Failed to fetch promotoria aggregate');
+        throw new Error(result.message || 'Failed to fetch promotoria tienda');
       }
 
       setData(result);
     } catch (err) {
       setError(err as Error);
-      console.error('usePromotoriaAggregate error:', err);
+      console.error('usePromotoriaTienda error:', err);
     } finally {
       setLoading(false);
     }
@@ -121,24 +121,36 @@ export function usePromotoriaAggregate(
   };
 }
 
+interface UsePromotoriaProductsOptions extends UsePromotoriaOptions {
+  id_store?: number;
+}
+
 /**
- * Hook for fetching products without sales (highest risk)
+ * Hook for fetching products without sales for a specific store (highest risk)
  */
-export function usePromotoriaProductsSinVenta(
-  options: UsePromotoriaOptions = {}
+export function usePromotoriaProductsSinVentaByStore(
+  options: UsePromotoriaProductsOptions = {}
 ): UsePromotoriaReturn<PromotoriaProductsResponse> {
-  const { autoFetch = true, limit = 3 } = options;
+  const { autoFetch = false, limit = 3, id_store } = options;
 
   const [data, setData] = useState<PromotoriaProductsResponse | null>(null);
-  const [loading, setLoading] = useState<boolean>(autoFetch);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (storeId?: number) => {
+    const targetStoreId = storeId || id_store;
+    
+    if (!targetStoreId) {
+      setError(new Error('Store ID is required'));
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
       const params = new URLSearchParams({
+        id_store: targetStoreId.toString(),
         limit: limit.toString(),
       });
 
@@ -151,23 +163,23 @@ export function usePromotoriaProductsSinVenta(
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.message || 'Failed to fetch products sin venta');
+        throw new Error(result.message || 'Failed to fetch products sin venta by store');
       }
 
       setData(result);
     } catch (err) {
       setError(err as Error);
-      console.error('usePromotoriaProductsSinVenta error:', err);
+      console.error('usePromotoriaProductsSinVentaByStore error:', err);
     } finally {
       setLoading(false);
     }
-  }, [limit]);
+  }, [limit, id_store]);
 
   useEffect(() => {
-    if (autoFetch) {
-      fetchData();
+    if (autoFetch && id_store) {
+      fetchData(id_store);
     }
-  }, [autoFetch, fetchData]);
+  }, [autoFetch, id_store, fetchData]);
 
   return {
     data,

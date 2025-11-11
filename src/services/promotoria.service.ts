@@ -1,4 +1,4 @@
-import { PromotoriaRepository, PromotoriaSummary, PromotoriaAggregate, PromotoriaProduct } from '@/repositories/promotoria.repository';
+import { PromotoriaRepository, PromotoriaSummary, PromotoriaTienda, PromotoriaProduct } from '@/repositories/promotoria.repository';
 
 /**
  * API Response wrapper interfaces
@@ -9,9 +9,9 @@ export interface PromotoriaSummaryResponse {
   timestamp: string;
 }
 
-export interface PromotoriaAggregateResponse {
+export interface PromotoriaTiendaResponse {
   success: boolean;
-  data: PromotoriaAggregate;
+  data: PromotoriaTienda;
   timestamp: string;
 }
 
@@ -48,11 +48,11 @@ export class PromotoriaService {
   }
 
   /**
-   * Get aggregate metrics from promotoria tienda
+   * Get single store with highest risk
    */
-  async getAggregate(): Promise<PromotoriaAggregateResponse> {
+  async getTiendaTopRiesgo(): Promise<PromotoriaTiendaResponse> {
     try {
-      const data = await this.repository.getAggregate();
+      const data = await this.repository.getTiendaTopRiesgo();
       return {
         success: true,
         data,
@@ -60,19 +60,20 @@ export class PromotoriaService {
       };
     } catch (error) {
       throw new Error(
-        `Service error getting promotoria aggregate: ${(error as Error).message}`
+        `Service error getting promotoria tienda top riesgo: ${(error as Error).message}`
       );
     }
   }
 
   /**
-   * Get top products without sales (highest risk)
+   * Get top products without sales for a specific store (highest risk)
    * 
+   * @param id_store - Store ID to filter products
    * @param limit - Number of products to return (default: 3)
    */
-  async getProductsSinVenta(limit: number = 3): Promise<PromotoriaProductsResponse> {
+  async getProductsSinVentaByStore(id_store: number, limit: number = 3): Promise<PromotoriaProductsResponse> {
     try {
-      const data = await this.repository.getProductsSinVenta(limit);
+      const data = await this.repository.getProductsSinVentaByStore(id_store, limit);
       return {
         success: true,
         data,
@@ -81,7 +82,7 @@ export class PromotoriaService {
       };
     } catch (error) {
       throw new Error(
-        `Service error getting products sin venta: ${(error as Error).message}`
+        `Service error getting products sin venta by store: ${(error as Error).message}`
       );
     }
   }

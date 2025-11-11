@@ -5,13 +5,14 @@ import { PromotoriaService } from '@/services/promotoria.service';
 
 /**
  * GET /api/promotoria/aggregate
- * Get aggregate data from promotoria tienda
+ * Get single store with highest risk
  * 
  * Response:
  * {
  *   "success": true,
  *   "data": {
- *     "count": 22,
+ *     "id_store": 123,
+ *     "store_name": "Supercito Oriente",
  *     "ventas_acumuladas": "0",
  *     "riesgo_total": 29153.5,
  *     "inventario_sin_rotacion_total": "2034"
@@ -25,15 +26,15 @@ export async function GET() {
     const repository = new PromotoriaRepository(supabase);
     const service = new PromotoriaService(repository);
 
-    const result = await service.getAggregate();
+    const result = await service.getTiendaTopRiesgo();
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Promotoria Aggregate API Error:', error);
+    console.error('Promotoria Tienda Top Riesgo API Error:', error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to fetch promotoria aggregate',
+        error: 'Failed to fetch promotoria tienda top riesgo',
         message: (error as Error).message,
       },
       { status: 500 }

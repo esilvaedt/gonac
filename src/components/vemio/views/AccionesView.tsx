@@ -10,8 +10,8 @@ import {
 import { useExhibicionResumen } from "@/hooks/useExhibiciones";
 import { 
   usePromotoriaSummary, 
-  usePromotoriaAggregate, 
-  usePromotoriaProductsSinVenta 
+  usePromotoriaTienda, 
+  usePromotoriaProductsSinVentaByStore 
 } from "@/hooks/usePromotoria";
 import ExhibicionConfigCard from "@/components/vemio/ExhibicionConfigCard";
 import ExhibicionMetricsCards from "@/components/vemio/ExhibicionMetricsCards";
@@ -98,8 +98,19 @@ export default function AccionesView({ data }: AccionesViewProps) {
 
   // Fetch Acción #4: Visita Promotoría data
   const { data: promotoriaSummary, loading: promotoriaSummaryLoading } = usePromotoriaSummary();
-  const { data: promotoriaAggregate, loading: promotoriaAggregateLoading } = usePromotoriaAggregate();
-  const { data: promotoriaProducts, loading: promotoriaProductsLoading } = usePromotoriaProductsSinVenta({ limit: 3 });
+  const { data: promotoriaTienda, loading: promotoriaTiendaLoading } = usePromotoriaTienda();
+  const { data: promotoriaProducts, loading: promotoriaProductsLoading, refetch: refetchProducts } = usePromotoriaProductsSinVentaByStore({ 
+    id_store: promotoriaTienda?.data.id_store,
+    limit: 3,
+    autoFetch: false 
+  });
+
+  // Fetch products when store ID is available
+  useEffect(() => {
+    if (promotoriaTienda?.data.id_store) {
+      refetchProducts(promotoriaTienda.data.id_store);
+    }
+  }, [promotoriaTienda?.data.id_store, refetchProducts]);
 
   // Mark as mounted after initial render
   useEffect(() => {
@@ -790,7 +801,7 @@ export default function AccionesView({ data }: AccionesViewProps) {
           ) : actionType === 'visitaPromotoria' ? (
             <>
               {/* Loading State */}
-              {(promotoriaSummaryLoading || promotoriaAggregateLoading || promotoriaProductsLoading) && (
+              {(promotoriaSummaryLoading || promotoriaTiendaLoading) && (
                 <div className="text-center py-8">
                   <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-purple-600 border-r-transparent"></div>
                   <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Cargando datos de promotoría...</p>
@@ -816,7 +827,7 @@ export default function AccionesView({ data }: AccionesViewProps) {
               )}
 
               {/* Fallback to mock data if API fails */}
-              {!promotoriaSummaryLoading && !promotoriaSummary && !promotoriaAggregateLoading && !promotoriaAggregate && (
+              {!promotoriaSummaryLoading && !promotoriaSummary && !promotoriaTiendaLoading && !promotoriaTienda && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                     <div className="text-sm text-gray-500 dark:text-gray-400">Costo de Ejecución</div>
@@ -899,13 +910,13 @@ export default function AccionesView({ data }: AccionesViewProps) {
                     <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                       <div className="text-[10px] text-gray-500 mb-1">Tienda</div>
                       <div className="text-xl font-bold text-gray-900">
-                        {promotoriaAggregate?.data.count || 798}
+                        {promotoriaTienda?.data.store_name || '798'}
                       </div>
                       <div className="text-[10px] text-gray-600 mt-1">
                         Ventas Acumuladas
                       </div>
                       <div className="text-xs text-gray-900">
-                        {promotoriaAggregate?.data.ventas_acumuladas || 0} unidades
+                        {promotoriaTienda?.data.ventas_acumuladas || 0} unidades
                       </div>
                     </div>
 
@@ -958,7 +969,7 @@ export default function AccionesView({ data }: AccionesViewProps) {
                         <span className="text-xs font-semibold text-gray-900">Riesgo</span>
                       </div>
                       <div className="text-lg font-bold text-gray-900">
-                        {promotoriaAggregate ? formatCurrency(promotoriaAggregate.data.riesgo_total) : '$1.7K'}
+                        {promotoriaTienda ? formatCurrency(promotoriaTienda.data.riesgo_total) : '$1.7K'}
                       </div>
                     </div>
 
@@ -969,7 +980,7 @@ export default function AccionesView({ data }: AccionesViewProps) {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div className="text-[10px] text-gray-600 leading-relaxed">
-                          Hay <span className="font-semibold text-gray-900">{promotoriaAggregate ? formatNumber(Number(promotoriaAggregate.data.inventario_sin_rotacion_total)) : '240'} unidades</span> en bodega sin rotar. Habla con el gerente para ganar espacio adicional en piso. Realiza exhibición extra. Toma fotos y marca como completado.
+                          Hay <span className="font-semibold text-gray-900">{promotoriaTienda ? formatNumber(Number(promotoriaTienda.data.inventario_sin_rotacion_total)) : '240'} unidades</span> en bodega sin rotar. Habla con el gerente para ganar espacio adicional en piso. Realiza exhibición extra. Toma fotos y marca como completado.
                         </div>
                       </div>
                     </div>
