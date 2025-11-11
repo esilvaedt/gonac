@@ -339,6 +339,7 @@ export default function TiendasView({ data }: TiendasViewProps) {
             ventasValor: parseFloat(card.ventas_valor.replace(/[^0-9.-]+/g, '')),
             ventasUnidades: parseFloat(card.ventas_unidades.replace(/[^0-9.-]+/g, '')),
             ventaSemanalTienda: parseFloat(card.ventas_semana_promedio_tienda_pesos.replace(/[^0-9.-]+/g, '')),
+            ventaSemanalTiendaUnidades: parseFloat(card.ventas_semana_promedio_tienda_unidades?.replace(/[^0-9.-]+/g, '') || '0'),
             diasInventario: parseFloat(card.dias_inventario)
           },
           // Map API stores to UI format
