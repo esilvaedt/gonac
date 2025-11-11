@@ -129,6 +129,8 @@ export class PromotoriaRepository {
    * @returns Array of products ordered by risk (descending)
    */
   async getProductsSinVenta(limit: number = 3): Promise<PromotoriaProduct[]> {
+    // Fetch all data first, then group and limit
+    // This ensures we get the top N products after grouping, not top N rows before grouping
     const { data, error } = await this.supabase
       .schema('gonac')
       .from('vw_promotoria_tienda_sku')
@@ -140,8 +142,7 @@ export class PromotoriaRepository {
         riesgo,
         core_cat_product!inner(product_name)
       `)
-      .order('riesgo', { ascending: false })
-      .limit(limit);
+      .order('riesgo', { ascending: false });
 
     if (error) {
       throw new Error(`Error fetching products sin venta: ${error.message}`);
@@ -187,7 +188,7 @@ export class PromotoriaRepository {
       riesgo: data.riesgos.reduce((sum, r) => sum + r, 0) / data.riesgos.length,
     }));
 
-    // Sort by riesgo descending and limit
+    // Sort by average riesgo descending and limit to requested number
     return products
       .sort((a, b) => b.riesgo - a.riesgo)
       .slice(0, limit);
