@@ -1,9 +1,9 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { 
-  ValorizacionItem, 
+import {
+  ValorizacionItem,
   AgotadoDetalle,
   CaducidadDetalle,
-  SinVentasDetalle 
+  SinVentasDetalle
 } from '@/types/valorizacion';
 
 /**
@@ -11,7 +11,7 @@ import {
  * Handles all database operations related to valorizacion data
  */
 export class ValorizacionRepository {
-  constructor(private supabase: SupabaseClient) {}
+  constructor(private supabase: SupabaseClient) { }
 
   /**
    * Fetches valorizacion data from multiple tables using UNION ALL
@@ -175,14 +175,26 @@ export class ValorizacionRepository {
     }
 
     // Transform the nested structure to flat objects
-    return data.map((item: any) => ({
-      segment: String(item.segment || ''),
-      store_name: String(item.core_cat_store?.store_name || ''),
-      product_name: String(item.core_cat_product?.product_name || ''),
-      dias_inventario: Number(item.dias_inventario) || 0,
-      impacto: Number(item.impacto) || 0,
-      detectado: String(item.detectado || ''),
-    }));
+    return data.map((item) => {
+      const coreStore = item.core_cat_store as { store_name: string }[] | { store_name: string } | undefined;
+      const coreProduct = item.core_cat_product as { product_name: string }[] | { product_name: string } | undefined;
+
+      const storeName = Array.isArray(coreStore)
+        ? coreStore[0]?.store_name || ''
+        : coreStore?.store_name || '';
+      const productName = Array.isArray(coreProduct)
+        ? coreProduct[0]?.product_name || ''
+        : coreProduct?.product_name || '';
+
+      return {
+        segment: String(item.segment || ''),
+        store_name: String(storeName),
+        product_name: String(productName),
+        dias_inventario: Number(item.dias_inventario) || 0,
+        impacto: Number(item.impacto) || 0,
+        detectado: String(item.detectado || ''),
+      };
+    });
   }
 
   /**
@@ -212,15 +224,27 @@ export class ValorizacionRepository {
     }
 
     // Transform the nested structure to flat objects
-    return data.map((item: any) => ({
-      segment: String(item.segment || ''),
-      store_name: String(item.core_cat_store?.store_name || ''),
-      product_name: String(item.core_cat_product?.product_name || ''),
-      fecha_caducidad: String(item.fecha_caducidad || ''),
-      inventario_remanente: Number(item.inventario_remanente) || 0,
-      impacto: Number(item.impacto) || 0,
-      detectado: String(item.detectado || ''),
-    }));
+    return data.map((item) => {
+      const coreStore = item.core_cat_store as { store_name: string }[] | { store_name: string } | undefined;
+      const coreProduct = item.core_cat_product as { product_name: string }[] | { product_name: string } | undefined;
+
+      const storeName = Array.isArray(coreStore)
+        ? coreStore[0]?.store_name || ''
+        : coreStore?.store_name || '';
+      const productName = Array.isArray(coreProduct)
+        ? coreProduct[0]?.product_name || ''
+        : coreProduct?.product_name || '';
+
+      return {
+        segment: String(item.segment || ''),
+        store_name: String(storeName),
+        product_name: String(productName),
+        fecha_caducidad: String(item.fecha_caducidad || ''),
+        inventario_remanente: Number(item.inventario_remanente) || 0,
+        impacto: Number(item.impacto) || 0,
+        detectado: String(item.detectado || ''),
+      };
+    });
   }
 
   /**
@@ -246,11 +270,23 @@ export class ValorizacionRepository {
     }
 
     // Transform the nested structure to flat objects
-    return data.map((item: any) => ({
-      store_name: String(item.core_cat_store?.store_name || ''),
-      product_name: String(item.core_cat_product?.product_name || ''),
-      impacto: Number(item.impacto) || 0,
-    }));
+    return data.map((item) => {
+      const coreStore = item.core_cat_store as { store_name: string }[] | { store_name: string } | undefined;
+      const coreProduct = item.core_cat_product as { product_name: string }[] | { product_name: string } | undefined;
+
+      const storeName = Array.isArray(coreStore)
+        ? coreStore[0]?.store_name || ''
+        : coreStore?.store_name || '';
+      const productName = Array.isArray(coreProduct)
+        ? coreProduct[0]?.product_name || ''
+        : coreProduct?.product_name || '';
+
+      return {
+        store_name: String(storeName),
+        product_name: String(productName),
+        impacto: Number(item.impacto) || 0,
+      };
+    });
   }
 }
 

@@ -10,7 +10,7 @@ import {
  * Handles data access for urgent restocking actions in HOT and Balanced stores
  */
 export class AccionReabastoRepository {
-  constructor(private supabase: SupabaseClient) {}
+  constructor(private supabase: SupabaseClient) { }
 
   /**
    * Get summary metrics for restocking action
@@ -71,10 +71,13 @@ export class AccionReabastoRepository {
     // Group by store name and sum values
     const storeMap = new Map<string, { unidades: number; monto: number }>();
 
-    data.forEach((item: any) => {
-      const storeName = item.core_cat_store?.store_name || '';
+    data.forEach((item) => {
+      const coreStore = item.core_cat_store as { store_name: string }[] | { store_name: string } | undefined;
+      const storeName = Array.isArray(coreStore)
+        ? coreStore[0]?.store_name || ''
+        : coreStore?.store_name || '';
       const existing = storeMap.get(storeName) || { unidades: 0, monto: 0 };
-      
+
       storeMap.set(storeName, {
         unidades: existing.unidades + (Number(item.unidades_a_pedir) || 0),
         monto: existing.monto + (Number(item.monto_necesario_pedido) || 0)
@@ -116,15 +119,27 @@ export class AccionReabastoRepository {
     }
 
     // Transform the nested structure to flat objects
-    return data.map((item: any) => ({
-      store_name: String(item.core_cat_store?.store_name || ''),
-      product_name: String(item.core_cat_product?.product_name || ''),
-      id_store: Number(item.id_store) || 0,
-      sku: Number(item.sku) || 0,
-      unidades_a_pedir: Number(item.unidades_a_pedir) || 0,
-      monto_necesario_pedido: Number(item.monto_necesario_pedido) || 0,
-      dias_inventario_post_reabasto: Number(item.dias_inventario_post_reabasto) || 0
-    }));
+    return data.map((item) => {
+      const coreStore = item.core_cat_store as { store_name: string }[] | { store_name: string } | undefined;
+      const coreProduct = item.core_cat_product as { product_name: string }[] | { product_name: string } | undefined;
+
+      const storeName = Array.isArray(coreStore)
+        ? coreStore[0]?.store_name || ''
+        : coreStore?.store_name || '';
+      const productName = Array.isArray(coreProduct)
+        ? coreProduct[0]?.product_name || ''
+        : coreProduct?.product_name || '';
+
+      return {
+        store_name: String(storeName),
+        product_name: String(productName),
+        id_store: Number(item.id_store) || 0,
+        sku: Number(item.sku) || 0,
+        unidades_a_pedir: Number(item.unidades_a_pedir) || 0,
+        monto_necesario_pedido: Number(item.monto_necesario_pedido) || 0,
+        dias_inventario_post_reabasto: Number(item.dias_inventario_post_reabasto) || 0
+      };
+    });
   }
 }
 
