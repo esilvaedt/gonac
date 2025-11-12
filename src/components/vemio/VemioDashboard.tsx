@@ -4,19 +4,22 @@ import { useState } from "react";
 import { vemioMockData } from "@/data/vemio-mock-data";
 import VemioHeader from "./VemioHeader";
 import VemioTabs from "./VemioTabs";
+import AgenticoView from "./views/AgenticoView";
 import ResumenView from "./views/ResumenView";
 import TiendasView from "./views/TiendasView";
 import SKUsView from "./views/SKUsView";
-import OportunidadesView from "./views/OportunidadesView";
+import PriorizacionOportunidadesView from "./views/PriorizacionOportunidadesView";
 import AccionesView from "./views/AccionesView";
 
-export type TabType = "resumen" | "tiendas" | "skus" | "oportunidades" | "acciones";
+export type TabType = "agentico" | "resumen" | "tiendas" | "skus" | "oportunidades" | "acciones";
 
 export default function VemioDashboard() {
-  const [activeTab, setActiveTab] = useState<TabType>("resumen");
+  const [activeTab, setActiveTab] = useState<TabType>("agentico");
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case "agentico":
+        return <AgenticoView />;
       case "resumen":
         return <ResumenView data={vemioMockData.resumen} />;
       case "tiendas":
@@ -24,11 +27,11 @@ export default function VemioDashboard() {
       case "skus":
         return <SKUsView data={vemioMockData.skus} />;
       case "oportunidades":
-        return <OportunidadesView data={vemioMockData.oportunidades} />;
+        return <PriorizacionOportunidadesView />;
       case "acciones":
         return <AccionesView data={vemioMockData.acciones} />;
       default:
-        return <ResumenView data={vemioMockData.resumen} />;
+        return <AgenticoView />;
     }
   };
 
