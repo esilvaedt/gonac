@@ -228,6 +228,28 @@ export default function PriorizacionOportunidadesView() {
     }
   };
 
+  const handleCrearPlan = (opp: any) => {
+    // Preparar datos de la oportunidad para el wizard
+    const oportunidadData = {
+      id: opp.id,
+      categoria: opp.categoria,
+      impacto: opp.impacto,
+      tiendas: opp.registros?.length > 0 ? opp.registros.map((r: any) => ({
+        id: `T-${r.tienda}`,
+        nombre: r.tienda,
+        ubicacion: r.tienda,
+        segmento: r.segmentoTienda || 'Balanceada'
+      })) : undefined,
+      skus: undefined // Por ahora no tenemos SKUs específicos en los registros
+    };
+    
+    // Guardar en sessionStorage para pasar al wizard
+    sessionStorage.setItem('oportunidadWizard', JSON.stringify(oportunidadData));
+    
+    // Navegar al wizard
+    router.push('/demo/wizard-plan');
+  };
+
   const renderOpportunityCard = (opp: any) => {
     const colors = getSeveridadConfig(opp.severidad);
     const isDetailLoading = getDetailLoading(opp.type);
@@ -325,10 +347,7 @@ export default function PriorizacionOportunidadesView() {
               </button>
             )}
             <button 
-              onClick={() => {
-                // Pasar el tipo de oportunidad en la URL para pre-cargar datos
-                router.push(`/demo/wizard-plan?oportunidadId=${opp.id}&oportunidadType=${opp.type}`);
-              }}
+              onClick={() => handleCrearPlan(opp)}
               className="flex-1 flex items-center justify-center px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors font-medium text-sm"
             >
               Crear Plan Prescriptivo

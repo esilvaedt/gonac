@@ -67,23 +67,29 @@ export interface DatosWizard {
   unidadesAfectadas: number;
 }
 
+export interface DatosOportunidad {
+  id: string;
+  categoria: string;
+  tiendas?: Tienda[];
+  skus?: SKU[];
+  impacto: number;
+}
+
 interface WizardPlanPrescriptivoProps {
-  oportunidadId?: string;
-  oportunidadType?: string; // 'agotado' | 'caducidad' | 'sinVenta' | 'bajoSellThrough'
+  oportunidad?: DatosOportunidad;
   onClose?: () => void;
   onComplete?: (datos: DatosWizard) => void;
 }
 
 export default function WizardPlanPrescriptivo({
-  oportunidadId,
-  oportunidadType,
+  oportunidad,
   onClose,
   onComplete
 }: WizardPlanPrescriptivoProps) {
   const [pasoActual, setPasoActual] = useState(1);
   const [datos, setDatos] = useState<DatosWizard>({
-    tiendasSeleccionadas: [],
-    skusSeleccionados: [],
+    tiendasSeleccionadas: oportunidad?.tiendas || [],
+    skusSeleccionados: oportunidad?.skus || [],
     accionSeleccionada: null,
     parametros: {},
     costoEstimado: 0,
@@ -133,10 +139,9 @@ export default function WizardPlanPrescriptivo({
         return (
           <Paso1Alcance
             datos={datos}
+            oportunidad={oportunidad}
             onActualizar={handleActualizarDatos}
             onSiguiente={handleSiguiente}
-            oportunidadId={oportunidadId}
-            oportunidadType={oportunidadType}
           />
         );
       case 2:
