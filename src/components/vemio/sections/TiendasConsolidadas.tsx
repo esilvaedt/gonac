@@ -1,7 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { useSegmentacionFormatted } from "@/hooks/useSegmentacion";
 import { useMetricasFormatted } from "@/hooks/useMetricas";
+import { 
+  useValorizacionSummary,
+  useAgotadoDetalle,
+  useCaducidadDetalle,
+  useSinVentasDetalle
+} from "@/hooks/useValorizacion";
+import WizardAccionesGenerales, { type TipoAccionGeneral } from "../modals/WizardAccionesGenerales";
 
 interface TiendasConsolidadasProps {
   data?: any;
@@ -9,10 +17,22 @@ interface TiendasConsolidadasProps {
 
 type RiskLevel = 'Crítico' | 'Alto' | 'Medio';
 
+type OpportunityType = 'agotado' | 'caducidad' | 'sinVenta';
+
 export default function TiendasConsolidadas({ data }: TiendasConsolidadasProps) {
+  const [wizardAbierto, setWizardAbierto] = useState(false);
+  const [accionSeleccionada, setAccionSeleccionada] = useState<any>(null);
+  const [expandedOportunidad, setExpandedOportunidad] = useState<OpportunityType | null>(null);
+
   // Fetch real data from hooks
   const { data: segmentacionData, loading: loadingSegmentacion, error: errorSegmentacion } = useSegmentacionFormatted({ autoFetch: true });
   const { data: metricasData, loading: loadingMetricas, error: errorMetricas } = useMetricasFormatted({ autoFetch: true });
+  const { data: valorizacionData, loading: loadingValorizacion } = useValorizacionSummary();
+  
+  // Fetch detailed data for opportunities
+  const { data: agotadoDetalleData, loading: agotadoLoading } = useAgotadoDetalle();
+  const { data: caducidadDetalleData, loading: caducidadLoading } = useCaducidadDetalle();
+  const { data: sinVentasDetalleData, loading: sinVentasLoading } = useSinVentasDetalle();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-MX', {
@@ -39,6 +59,138 @@ export default function TiendasConsolidadas({ data }: TiendasConsolidadasProps) 
     }
   };
 
+  // Map opportunity type to risk level
+  const getOportunidadRiskLevel = (type: string): RiskLevel => {
+    switch (type) {
+      case 'agotado':
+        return 'Crítico';
+      case 'caducidad':
+        return 'Alto';
+      case 'sinVenta':
+        return 'Medio';
+      default:
+        return 'Medio';
+    }
+  };
+
+  const getOportunidadTitle = (type: string): string => {
+    switch (type) {
+      case 'agotado':
+        return 'Agotado';
+      case 'caducidad':
+        return 'Caducidad';
+      case 'sinVenta':
+        return 'Sin Venta';
+      default:
+        return type;
+    }
+  };
+
+  const getOportunidadDescription = (type: string): string => {
+    switch (type) {
+      case 'agotado':
+        return 'Inventario < 10 días (Tiendas Hot y Balanceadas)';
+      case 'caducidad':
+        return 'Inventario remanente al 1-feb-2025 (Tiendas Slow y Críticas)';
+      case 'sinVenta':
+        return 'Ventas <= 0 unidades';
+      default:
+        return '';
+    }
+  };
+
+  const getOportunidadColor = (type: string): string => {
+    switch (type) {
+      case 'agotado':
+        return 'text-red-600 dark:text-red-400';
+      case 'caducidad':
+        return 'text-orange-600 dark:text-orange-400';
+      case 'sinVenta':
+        return 'text-purple-600 dark:text-purple-400';
+      default:
+        return 'text-gray-600 dark:text-gray-400';
+    }
+  };
+
+  // Transform detailed data
+  const transformAgotadoData = (response: any) => {
+    if (!response || !response.data || !Array.isArray(response.data)) return [];
+    return response.data.map((item: any, index: number) => ({
+      id: `agotado-${index}`,
+      tienda: item.store_name,
+      sku: item.product_name,
+      diasInventario: item.dias_inventario,
+      segmentoTienda: item.segment.toLowerCase(),
+      impactoEstimado: item.impacto,
+      fechaDeteccion: item.detectado
+    }));
+  };
+
+  const transformCaducidadData = (response: any) => {
+    if (!response || !response.data || !Array.isArray(response.data)) return [];
+    return response.data.map((item: any, index: number) => ({
+      id: `caducidad-${index}`,
+      tienda: item.store_name,
+      sku: item.product_name,
+      inventarioRemanente: item.inventario_remanente,
+      fechaCaducidad: item.fecha_caducidad,
+      segmentoTienda: item.segment.toLowerCase(),
+      impactoEstimado: item.impacto,
+      fechaDeteccion: item.detectado
+    }));
+  };
+
+  const transformSinVentasData = (response: any) => {
+    if (!response || !response.data || !Array.isArray(response.data)) return [];
+    return response.data.map((item: any, index: number) => ({
+      id: `sinventa-${index}`,
+      tienda: item.store_name,
+      sku: item.product_name,
+      impactoEstimado: item.impacto
+    }));
+  };
+
+  const getSegmentColor = (segment: string) => {
+    switch (segment) {
+      case 'hot':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
+      case 'balanceada':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+      case 'slow':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
+      case 'critica':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+    }
+  };
+
+  const getDetailLoading = (type: OpportunityType) => {
+    switch (type) {
+      case 'agotado':
+        return agotadoLoading;
+      case 'caducidad':
+        return caducidadLoading;
+      case 'sinVenta':
+        return sinVentasLoading;
+    }
+  };
+
+  const getDetailData = (type: OpportunityType) => {
+    switch (type) {
+      case 'agotado':
+        return agotadoDetalleData ? transformAgotadoData(agotadoDetalleData) : [];
+      case 'caducidad':
+        return caducidadDetalleData ? transformCaducidadData(caducidadDetalleData) : [];
+      case 'sinVenta':
+        return sinVentasDetalleData ? transformSinVentasData(sinVentasDetalleData) : [];
+    }
+  };
+
+  const toggleOportunidadExpanded = (type: OpportunityType) => {
+    setExpandedOportunidad(expandedOportunidad === type ? null : type);
+  };
+
   // Calculate risk level based on segment data
   const getRiskLevel = (segment: string, diasInventario: number, contribucion: number): RiskLevel => {
     if (segment.toLowerCase() === 'criticas' || segment.toLowerCase() === 'críticas') {
@@ -51,26 +203,6 @@ export default function TiendasConsolidadas({ data }: TiendasConsolidadasProps) 
       return 'Alto';
     }
     return 'Medio';
-  };
-
-  // Calculate potential impact (temporary logic until backend provides it)
-  const calcularImpacto = (segment: string, ventasValor: number, diasInventario: number, numTiendas: number): number => {
-    const ventas = parseFloat(ventasValor.toString().replace(/[^0-9.-]/g, ''));
-
-    if (segment.toLowerCase() === 'hot') {
-      // Opportunity: potential lost sales due to stockouts (15% opportunity)
-      return ventas * 0.15;
-    }
-    if (segment.toLowerCase() === 'slow') {
-      // Risk: potential expiry/markdown (20% of current inventory value)
-      return ventas * 0.20;
-    }
-    if (segment.toLowerCase() === 'criticas' || segment.toLowerCase() === 'críticas') {
-      // Critical: high risk of total loss (30% of inventory value)
-      return ventas * 0.30;
-    }
-    // Balanceadas: optimization opportunity (5% improvement potential)
-    return ventas * 0.05;
   };
 
   // Parse and prepare store data
@@ -117,65 +249,111 @@ export default function TiendasConsolidadas({ data }: TiendasConsolidadasProps) 
     return 'text-green-600 dark:text-green-400';
   };
 
-  // Build opportunities from real data
-  const oportunidades = segmentacionData?.cards.map(card => {
-    const diasInv = parseFloat(card.dias_inventario);
-    const contribucion = parseFloat(card.contribucion_porcentaje);
-    const ventasValor = parseFloat(card.ventas_valor.replace(/[^0-9.-]/g, ''));
-
-    return {
-      title: getSegmentTitle(card.segment),
-      subtitle: getSegmentSubtitle(card.segment),
-      tiendas: card.num_tiendas_segmento,
-      impacto: calcularImpacto(card.segment, ventasValor, diasInv, card.num_tiendas_segmento),
-      risk: getRiskLevel(card.segment, diasInv, contribucion),
-      impactoColor: getImpactoColor(card.segment),
-    };
-  }) || [
-      {
-        title: 'Prevenir Agotados',
-        subtitle: 'Hot',
-        tiendas: 38,
-        impacto: 45000,
-        risk: 'Crítico' as RiskLevel,
-        impactoColor: 'text-red-600 dark:text-red-400',
-      },
-      {
-        title: 'Acelerar Venta',
-        subtitle: 'Slow',
-        tiendas: 28,
-        impacto: 52600,
-        risk: 'Alto' as RiskLevel,
-        impactoColor: 'text-orange-600 dark:text-orange-400',
-      },
-      {
-        title: 'Recuperación',
-        subtitle: 'Críticas',
-        tiendas: 9,
-        impacto: 23800,
-        risk: 'Crítico' as RiskLevel,
-        impactoColor: 'text-purple-600 dark:text-purple-400',
-      },
-      {
-        title: 'Optimización',
-        subtitle: 'Balanceadas',
-        tiendas: 52,
-        impacto: 18200,
-        risk: 'Medio' as RiskLevel,
-        impactoColor: 'text-green-600 dark:text-green-400',
-      },
-    ];
+  // Build opportunities from valorizacion data
+  const oportunidades = valorizacionData ? [
+    {
+      type: 'agotado',
+      title: getOportunidadTitle('agotado'),
+      description: getOportunidadDescription('agotado'),
+      tiendas: valorizacionData.agotado.tiendas,
+      impacto: valorizacionData.agotado.impacto,
+      risk: getOportunidadRiskLevel('agotado'),
+      impactoColor: getOportunidadColor('agotado'),
+    },
+    {
+      type: 'caducidad',
+      title: getOportunidadTitle('caducidad'),
+      description: getOportunidadDescription('caducidad'),
+      tiendas: valorizacionData.caducidad.tiendas,
+      impacto: valorizacionData.caducidad.impacto,
+      risk: getOportunidadRiskLevel('caducidad'),
+      impactoColor: getOportunidadColor('caducidad'),
+    },
+    {
+      type: 'sinVenta',
+      title: getOportunidadTitle('sinVenta'),
+      description: getOportunidadDescription('sinVenta'),
+      tiendas: valorizacionData.sinVentas.tiendas,
+      impacto: valorizacionData.sinVentas.impacto,
+      risk: getOportunidadRiskLevel('sinVenta'),
+      impactoColor: getOportunidadColor('sinVenta'),
+    },
+  ] : [
+    {
+      type: 'agotado',
+      title: 'Agotado',
+      description: 'Inventario < 10 días (Tiendas Hot y Balanceadas)',
+      tiendas: 38,
+      impacto: 45000,
+      risk: 'Crítico' as RiskLevel,
+      impactoColor: 'text-red-600 dark:text-red-400',
+    },
+    {
+      type: 'caducidad',
+      title: 'Caducidad',
+      description: 'Inventario remanente al 1-feb-2025 (Tiendas Slow y Críticas)',
+      tiendas: 28,
+      impacto: 52600,
+      risk: 'Alto' as RiskLevel,
+      impactoColor: 'text-orange-600 dark:text-orange-400',
+    },
+    {
+      type: 'sinVenta',
+      title: 'Sin Venta',
+      description: 'Ventas <= 0 unidades',
+      tiendas: 9,
+      impacto: 23800,
+      risk: 'Crítico' as RiskLevel,
+      impactoColor: 'text-purple-600 dark:text-purple-400',
+    },
+  ];
 
   // Find specific segments for actions
   const hotSegment = segmentacionData?.cards.find(c => c.segment.toLowerCase() === 'hot');
   const slowSegment = segmentacionData?.cards.find(c => c.segment.toLowerCase() === 'slow');
+  const balanceadasSegment = segmentacionData?.cards.find(c => c.segment.toLowerCase() === 'balanceadas' || c.segment.toLowerCase() === 'balanceada');
   const criticasSegment = segmentacionData?.cards.find(c => c.segment.toLowerCase() === 'criticas' || c.segment.toLowerCase() === 'críticas');
+
+  // Calculate tiendas HOT + Balanceadas for Reabasto Urgente
+  const tiendasReabastoUrgente = (hotSegment?.num_tiendas_segmento || 38) + (balanceadasSegment?.num_tiendas_segmento || 52);
+  
+  // Calculate tiendas Slow + Dead/Críticas for Promoción
+  const tiendasPromocionEvacuar = (slowSegment?.num_tiendas_segmento || 28) + (criticasSegment?.num_tiendas_segmento || 9);
+  
+  // Placeholder for tiendas HOT with exhibitions (25% of HOT stores approximately)
+  const tiendasExhibicionesAdicionales = Math.round((hotSegment?.num_tiendas_segmento || 38) * 0.25);
 
   const acciones = [
     {
-      title: 'Prevenir Quiebres',
+      id: 'reabasto_urgente' as TipoAccionGeneral,
+      title: 'Reabasto Urgente',
+      tiendas: tiendasReabastoUrgente,
+      tipo: 'Tiendas HOT y Balanceadas',
+      description: 'Prevenir quiebres de stock en tiendas de alto desempeño',
+      icon: (
+        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      ),
+    },
+    {
+      id: 'exhibiciones_adicionales' as TipoAccionGeneral,
+      title: 'Exhibiciones Adicionales',
+      tiendas: tiendasExhibicionesAdicionales,
+      tipo: 'Tiendas HOT con ROI positivo',
+      description: `Identificadas ${tiendasExhibicionesAdicionales} tiendas HOT donde exhibiciones adicionales generarían retorno positivo sobre inversión`,
+      icon: (
+        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'pedido_extraordinario' as TipoAccionGeneral,
+      title: 'Pedido Extraordinario',
       tiendas: hotSegment?.num_tiendas_segmento || 38,
-      tipo: 'Hot',
+      tipo: 'Tiendas HOT',
+      description: 'Pedido extraordinario requerido para cubrir demanda excepcional',
       icon: (
         <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -183,19 +361,23 @@ export default function TiendasConsolidadas({ data }: TiendasConsolidadasProps) 
       ),
     },
     {
-      title: 'Acelerar Ventas',
-      tiendas: slowSegment?.num_tiendas_segmento || 28,
-      tipo: 'Slow',
+      id: 'promocion_evacuar' as TipoAccionGeneral,
+      title: 'Promoción Evacuar Inventario',
+      tiendas: tiendasPromocionEvacuar,
+      tipo: 'Tiendas Slow y Dead',
+      description: 'Activar promociones para reducir inventario en riesgo de caducidad',
       icon: (
         <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
         </svg>
       ),
     },
     {
-      title: 'Visitas Campo',
+      id: 'visita_promotoria' as TipoAccionGeneral,
+      title: 'Visita Promotoría',
       tiendas: criticasSegment?.num_tiendas_segmento || 9,
-      tipo: 'Críticas',
+      tipo: 'Tiendas Críticas',
+      description: 'Visitas de campo para activar ventas en tiendas con bajo desempeño',
       icon: (
         <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -203,31 +385,33 @@ export default function TiendasConsolidadas({ data }: TiendasConsolidadasProps) 
         </svg>
       ),
     },
-    {
-      title: 'Optimizar Stock',
-      tiendas: storeData.totalTiendas,
-      tipo: 'Todas las tiendas',
-      icon: (
-        <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-        </svg>
-      ),
-    },
   ];
+
+  const handleAbrirWizard = (accion: typeof acciones[0]) => {
+    setAccionSeleccionada(accion);
+    setWizardAbierto(true);
+  };
+
+  const handleCerrarWizard = () => {
+    setWizardAbierto(false);
+    setAccionSeleccionada(null);
+  };
+
+  const handleCompletarWizard = (datos: any) => {
+    console.log("Plan de acción completado:", datos);
+    // Aquí puedes agregar lógica adicional como mostrar una notificación, refrescar datos, etc.
+  };
 
   const impactoTotal = oportunidades.reduce((sum, op) => sum + op.impacto, 0);
 
-  // Calculate stores with opportunities (exclude balanceadas)
-  const tiendasConOportunidades = segmentacionData?.cards
-    .filter(c => {
-      const seg = c.segment.toLowerCase();
-      return seg === 'hot' || seg === 'slow' || seg === 'criticas' || seg === 'críticas';
-    })
-    .reduce((sum, c) => sum + c.num_tiendas_segmento, 0) || 71;
+  // Calculate stores with opportunities from valorizacion data
+  const tiendasConOportunidades = valorizacionData 
+    ? valorizacionData.agotado.tiendas + valorizacionData.caducidad.tiendas + valorizacionData.sinVentas.tiendas
+    : 71;
 
   const porcentajeTiendasConOportunidades = ((tiendasConOportunidades / storeData.totalTiendas) * 100).toFixed(0);
 
-  const loading = loadingSegmentacion || loadingMetricas;
+  const loading = loadingSegmentacion || loadingMetricas || loadingValorizacion;
   const error = errorSegmentacion || errorMetricas;
 
   return (
@@ -337,38 +521,175 @@ export default function TiendasConsolidadas({ data }: TiendasConsolidadasProps) 
             Áreas de Oportunidades Identificadas
           </h3>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {oportunidades.map((oportunidad, index) => (
-              <div
-                key={index}
-                className="relative rounded-lg bg-white dark:bg-gray-900 p-4 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
-              >
-                {/* Risk Badge */}
-                <div className="absolute top-3 right-3">
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded ${getBadgeColor(oportunidad.risk)}`}>
-                    {oportunidad.risk}
-                  </span>
-                </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {oportunidades.map((oportunidad, index) => {
+              const detailData = getDetailData(oportunidad.type as OpportunityType);
+              const isDetailLoading = getDetailLoading(oportunidad.type as OpportunityType);
+              const isExpanded = expandedOportunidad === oportunidad.type;
 
-                <div className="mb-2">
-                  <h4 className="text-base font-semibold text-gray-900 dark:text-white">
-                    {oportunidad.title}
-                  </h4>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    {formatNumber(oportunidad.tiendas)} tiendas afectadas
-                  </p>
-                </div>
+              return (
+                <div
+                  key={index}
+                  className="rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
+                >
+                  <div className="relative p-4">
+                    {/* Risk Badge */}
+                    <div className="absolute top-3 right-3">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded ${getBadgeColor(oportunidad.risk)}`}>
+                        {oportunidad.risk}
+                      </span>
+                    </div>
 
-                <div className="mt-3">
-                  <div className={`text-2xl font-bold mb-0.5 ${oportunidad.impactoColor}`}>
-                    {formatCurrency(oportunidad.impacto)}
+                    <div className="mb-3">
+                      <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+                        {oportunidad.title}
+                      </h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                        {oportunidad.description}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500">
+                        {formatNumber(oportunidad.tiendas)} tiendas afectadas
+                      </p>
+                    </div>
+
+                    <div className="mt-3 mb-4">
+                      <div className={`text-2xl font-bold mb-0.5 ${oportunidad.impactoColor}`}>
+                        {formatCurrency(oportunidad.impacto)}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Impacto potencial
+                      </div>
+                    </div>
+
+                    {/* Ver Detalle Button */}
+                    {isDetailLoading ? (
+                      <button
+                        disabled
+                        className="w-full flex items-center justify-center px-4 py-2 bg-blue-400 text-white rounded-lg cursor-not-allowed text-sm"
+                      >
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Cargando...
+                      </button>
+                    ) : detailData.length > 0 ? (
+                      <button
+                        onClick={() => toggleOportunidadExpanded(oportunidad.type as OpportunityType)}
+                        className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Ver Detalle ({detailData.length} registros)
+                        <svg
+                          className={`h-4 w-4 ml-2 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    ) : (
+                      <div className="w-full flex items-center justify-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg text-sm">
+                        Sin registros detallados
+                      </div>
+                    )}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Impacto potencial
-                  </div>
+
+                  {/* Expanded Details */}
+                  {isExpanded && detailData.length > 0 && (
+                    <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4">
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                          <thead className="bg-gray-100 dark:bg-gray-700">
+                            <tr>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                Tienda
+                              </th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                SKU
+                              </th>
+                              {oportunidad.type === 'agotado' && (
+                                <>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    Días Inv.
+                                  </th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    Segmento
+                                  </th>
+                                </>
+                              )}
+                              {oportunidad.type === 'caducidad' && (
+                                <>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    Inv. Rem.
+                                  </th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    F. Cad.
+                                  </th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    Segmento
+                                  </th>
+                                </>
+                              )}
+                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                Impacto
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                            {detailData.slice(0, 5).map((registro: any) => (
+                              <tr key={registro.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                                  {registro.tienda}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                                  {registro.sku}
+                                </td>
+                                {oportunidad.type === 'agotado' && (
+                                  <>
+                                    <td className="px-3 py-2 whitespace-nowrap text-xs text-red-600 font-medium">
+                                      {registro.diasInventario}d
+                                    </td>
+                                    <td className="px-3 py-2 whitespace-nowrap">
+                                      <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getSegmentColor(registro.segmentoTienda)}`}>
+                                        {registro.segmentoTienda}
+                                      </span>
+                                    </td>
+                                  </>
+                                )}
+                                {oportunidad.type === 'caducidad' && (
+                                  <>
+                                    <td className="px-3 py-2 whitespace-nowrap text-xs text-yellow-600 font-medium">
+                                      {registro.inventarioRemanente}
+                                    </td>
+                                    <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-900 dark:text-white">
+                                      {new Date(registro.fechaCaducidad).toLocaleDateString('es-MX', { month: 'short', day: 'numeric' })}
+                                    </td>
+                                    <td className="px-3 py-2 whitespace-nowrap">
+                                      <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${getSegmentColor(registro.segmentoTienda)}`}>
+                                        {registro.segmentoTienda}
+                                      </span>
+                                    </td>
+                                  </>
+                                )}
+                                <td className="px-3 py-2 whitespace-nowrap text-xs text-green-600 font-medium">
+                                  {formatCurrency(registro.impactoEstimado)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {detailData.length > 5 && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
+                            Mostrando 5 de {detailData.length} registros
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -409,54 +730,58 @@ export default function TiendasConsolidadas({ data }: TiendasConsolidadasProps) 
             Acciones Recomendadas a Nivel General
           </h3>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {acciones.map((accion, index) => (
-              <div
-                key={index}
-                className={`rounded-lg p-4 border hover:shadow-md transition-shadow ${index === 0
-                  ? 'bg-gray-900 dark:bg-black border-gray-900 dark:border-black'
-                  : 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-700'
-                  }`}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {acciones.map((accion) => (
+              <button
+                key={accion.id}
+                onClick={() => handleAbrirWizard(accion)}
+                className="rounded-lg p-4 border bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-700 hover:border-brand-400 hover:shadow-lg hover:scale-105 transition-all cursor-pointer"
+                title={accion.description}
               >
                 <div className="flex flex-col items-center text-center">
-                  <div className={`mb-2 ${index === 0 ? 'text-white' : 'text-brand-600 dark:text-brand-400'}`}>
+                  <div className="mb-3 text-brand-600 dark:text-brand-400">
                     {accion.icon}
                   </div>
 
-                  <div className={`text-2xl font-bold mb-1 ${index === 0 ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                  <div className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
                     {formatNumber(accion.tiendas)}
                   </div>
 
-                  <h4 className={`text-sm font-semibold mb-0.5 ${index === 0 ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                  <h4 className="text-sm font-semibold mb-1 text-gray-900 dark:text-white">
                     {accion.title}
                   </h4>
 
-                  <div className={`text-xs ${index === 0 ? 'text-gray-300' : 'text-gray-600 dark:text-gray-400'}`}>
-                    tiendas {accion.tipo}
+                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                    {accion.tipo}
+                  </div>
+
+                  {/* Description hint */}
+                  <div className="mt-2 text-xs leading-relaxed text-gray-500 dark:text-gray-500">
+                    {accion.description}
+                  </div>
+
+                  {/* Click indicator - Blue button style */}
+                  <div className="mt-3 inline-flex items-center gap-1 px-3 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-xs font-medium rounded-full transition-colors">
+                    <span>Planificar</span>
+                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
-
-        {/* Action Buttons */}
-        <div className="mt-8 flex flex-col sm:flex-row gap-4">
-          <button className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg transition-colors shadow-sm">
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
-            Ver Plan de Acción Consolidado
-          </button>
-
-          <button className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors shadow-sm border border-gray-300 dark:border-gray-600">
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Exportar Análisis Completo
-          </button>
-        </div>
       </div>
+
+      {/* Wizard Modal */}
+      {wizardAbierto && accionSeleccionada && (
+        <WizardAccionesGenerales
+          accionInfo={accionSeleccionada}
+          onClose={handleCerrarWizard}
+          onComplete={handleCompletarWizard}
+        />
+      )}
     </div>
   );
 }
