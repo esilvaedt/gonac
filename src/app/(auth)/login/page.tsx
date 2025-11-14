@@ -9,7 +9,7 @@ export default function LoginPage() {
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-brand-600 to-brand-800 items-center justify-center p-12">
         <div className="max-w-md text-white">
           <div className="max-w-md text-white">
-            <h2 className="text-4xl font-bold mb-4">VEMIO Intelligence</h2>
+            <h2 className="text-4xl font-bold mb-4">VEMIO Impacta</h2>
             <p className="text-lg text-white/90 mb-6">
               Únete a la plataforma que revoluciona la gestión comercial con inteligencia artificial.
             </p>

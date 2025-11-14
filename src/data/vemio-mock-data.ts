@@ -1,4 +1,4 @@
-// VEMIO Intelligence Mock Data
+// VEMIO Impacta Mock Data
 // This is the absolute information origin for all project data
 
 export interface VemioData {
@@ -409,7 +409,7 @@ export interface VemioData {
 
 export const vemioMockData: VemioData = {
   projectInfo: {
-    name: "VEMIO Intelligence",
+    name: "VEMIO Impacta",
     totalRegisters: 1143,
     segmentation: {
       percentiles: {

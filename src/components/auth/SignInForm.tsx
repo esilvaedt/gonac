@@ -64,7 +64,7 @@ export default function SignInForm() {
               Iniciar Sesión
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Accede a VEMIO Intelligence con tu correo y contraseña
+              Accede a VEMIO Impacta con tu correo y contraseña
             </p>
           </div>
           <div>

@@ -86,7 +86,7 @@ export default function SignUpForm() {
               Crear Cuenta
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Regístrate en VEMIO Intelligence para comenzar
+              Regístrate en VEMIO Impacta para comenzar
             </p>
           </div>
           <div>

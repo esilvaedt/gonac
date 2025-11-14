@@ -3,13 +3,16 @@
 Vista completa para visualizar el registro de todas las tareas ejecutadas, activas y canceladas en el sistema.
 
 ## Ubicación
-- **Ruta**: `/historial-tareas`
-- **Componente principal**: `HistorialTareasView.tsx`
+- **Tab en Dashboard**: Integrada como tercera tab en VemioDashboard
+- **Ruta del dashboard**: `/` (página principal)
+- **Vista principal**: `HistorialView.tsx` (en `src/components/vemio/views/`)
 
 ## Estructura de Componentes
 
-### 1. HistorialTareasView
-Componente principal que orquesta toda la vista.
+### 1. HistorialView (Tab)
+Vista adaptada para sistema de tabs, sin header duplicado.
+- **Ubicación**: `src/components/vemio/views/HistorialView.tsx`
+- **Uso**: Se renderiza cuando el usuario selecciona la tab "Historial"
 
 ### 2. HistorialStatsCards
 Muestra las tarjetas de estadísticas principales:
@@ -36,6 +39,35 @@ Componente individual para mostrar los detalles de cada tarea:
 - Evidencias
 - Notas
 - Timeline de la tarea
+
+## Integración con VemioDashboard
+
+### Archivos Modificados
+
+1. **VemioDashboard.tsx**
+   - Agregado tipo `"historial"` a `TabType`
+   - Importado `HistorialView`
+   - Agregado case en `renderTabContent()`
+
+2. **VemioTabs.tsx**
+   - Agregada nueva tab "Historial" con icono de documento
+   - Orden: Resumen → Acciones → Historial
+
+### Flujo de Navegación
+
+```
+Usuario → Dashboard Principal (/)
+         ↓
+    VemioDashboard
+         ↓
+    VemioTabs [Resumen | Acciones | Historial]
+         ↓
+    Click en "Historial"
+         ↓
+    HistorialView renderiza
+         ↓
+    Muestra: Stats + Metrics + TaskList
+```
 
 ## Tipos de Tareas
 
@@ -104,13 +136,32 @@ Actualmente utiliza datos mock definidos en `HistorialTaskList.tsx`. Para integr
 - [ ] Filtros por estado y prioridad
 - [ ] Ordenamiento por columnas
 
-## Uso
+## Uso Como Tab
+
+La vista está integrada automáticamente en el sistema de tabs. No requiere configuración adicional.
+
+```tsx
+// Ya integrada en VemioDashboard.tsx
+import HistorialView from "./views/HistorialView";
+
+// ...
+case "historial":
+  return <HistorialView />;
+```
+
+## Uso Standalone (Opcional)
+
+Si necesitas usar la vista fuera del sistema de tabs:
 
 ```tsx
 import HistorialTareasView from "@/components/historial-tareas/HistorialTareasView";
 
-export default function HistorialTareasPage() {
-  return <HistorialTareasView />;
+export default function StandalonePage() {
+  return (
+    <div className="p-6">
+      <HistorialTareasView />
+    </div>
+  );
 }
 ```
 
@@ -121,4 +172,4 @@ Utiliza el sistema de diseño del proyecto con:
 - Dark mode support
 - Colores de marca configurados
 - Componentes UI reutilizables (Badge)
-
+- Responsive design completo

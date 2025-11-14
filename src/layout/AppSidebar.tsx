@@ -38,7 +38,7 @@ const navItems: NavItem[] = [
     icon: <GridIcon />,
     name: "Dashboard",
     subItems: [
-      { name: "VEMIO Intelligence", path: "/" },
+      { name: "VEMIO Impacta", path: "/" },
       { name: "Analytics", path: "/analytics" },
       { name: "Marketing", path: "/marketing" },
       { name: "CRM", path: "/crm" },

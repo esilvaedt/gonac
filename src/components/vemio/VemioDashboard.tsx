@@ -6,8 +6,9 @@ import VemioHeader from "./VemioHeader";
 import VemioTabs from "./VemioTabs";
 import ResumenView from "./views/ResumenView";
 import AccionesView from "./views/AccionesView";
+import HistorialView from "./views/HistorialView";
 
-export type TabType = "resumen" | "acciones";
+export type TabType = "resumen" | "acciones" | "historial";
 
 export default function VemioDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>("resumen");
@@ -18,6 +19,8 @@ export default function VemioDashboard() {
         return <ResumenView />;
       case "acciones":
         return <AccionesView data={vemioMockData.acciones} />;
+      case "historial":
+        return <HistorialView />;
       default:
         return <ResumenView />;
     }

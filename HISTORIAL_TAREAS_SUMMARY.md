@@ -6,10 +6,10 @@ Se ha creado exitosamente la nueva vista de **Historial de Tareas y Acciones** s
 
 ## 📁 Archivos Creados
 
-### Página Principal
-- `src/app/historial-tareas/page.tsx` - Página principal con layout completo
+### Vista en Tab
+- `src/components/vemio/views/HistorialView.tsx` - Vista principal integrada en tabs
 
-### Componentes
+### Componentes Reutilizables
 - `src/components/historial-tareas/HistorialTareasView.tsx` - Vista principal
 - `src/components/historial-tareas/HistorialStatsCards.tsx` - Tarjetas de estadísticas
 - `src/components/historial-tareas/HistorialMetricsCards.tsx` - Tarjetas de métricas
@@ -84,17 +84,17 @@ Se ha creado exitosamente la nueva vista de **Historial de Tareas y Acciones** s
 
 ## 🚀 Acceso a la Vista
 
-Para acceder a la nueva vista, navega a:
+La vista de Historial está integrada como una **tab** en el dashboard principal:
 
-```
-http://localhost:3000/historial-tareas
-```
+1. Navega al dashboard principal: `http://localhost:3000/`
+2. Haz clic en la tab "**Historial**" (junto a "Resumen" y "Acciones")
 
-O en producción:
+### Integración con Tabs
 
-```
-https://tu-dominio.com/historial-tareas
-```
+La vista está completamente integrada en el sistema de tabs de VemioDashboard:
+- **Tab 1**: Resumen
+- **Tab 2**: Acciones  
+- **Tab 3**: Historial ← Nueva tab agregada
 
 ## 📊 Datos de Ejemplo
 
