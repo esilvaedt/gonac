@@ -2,7 +2,6 @@
  * Opportunity Card Component
  */
 
-import type { ReactNode } from 'react';
 import type { RiskLevel, OpportunityType, DetailRecord } from '@/types/tiendas.types';
 import { getBadgeColor, getSegmentColor } from '@/utils/tiendas.mappers';
 import { formatCurrency, formatNumber, formatDate } from '@/utils/formatters';

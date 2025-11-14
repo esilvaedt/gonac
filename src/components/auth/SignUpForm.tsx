@@ -54,7 +54,7 @@ export default function SignUpForm() {
 
     try {
       await signup(formData.name, formData.email, formData.password);
-    } catch (error) {
+    } catch {
       setError("Error al crear la cuenta. Intenta nuevamente.");
     } finally {
       setLoading(false);

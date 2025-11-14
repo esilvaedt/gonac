@@ -13,11 +13,7 @@ import ImpactoTotalBanner from './ImpactoTotalBanner';
 import { useTiendasData } from '@/hooks/useTiendasData';
 import { buildActions } from '@/utils/tiendas.actions';
 
-interface TiendasConsolidadasProps {
-  data?: any;
-}
-
-export default function TiendasConsolidadas({ data }: TiendasConsolidadasProps) {
+export default function TiendasConsolidadas() {
   const {
     storeMetrics,
     opportunities,

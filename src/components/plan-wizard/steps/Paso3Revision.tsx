@@ -9,7 +9,7 @@ interface Paso3RevisionProps {
   onAnterior: () => void;
 }
 
-export default function Paso3Revision({ datos, onActualizar, onAnterior }: Paso3RevisionProps) {
+export default function Paso3Revision({ datos, onActualizar }: Paso3RevisionProps) {
   const [calculando, setCalculando] = useState(true);
 
   useEffect(() => {

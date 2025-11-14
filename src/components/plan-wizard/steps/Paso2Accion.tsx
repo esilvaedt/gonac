@@ -75,7 +75,7 @@ export default function Paso2Accion({ datos, onActualizar, onSiguiente, onAnteri
     };
 
     onActualizar({
-      accionSeleccionada: accionSeleccionada as any,
+      accionSeleccionada: accionSeleccionada as TipoAccionDetallado,
       parametros: parametrosFinales,
     });
     onSiguiente();

@@ -31,15 +31,44 @@ export class MetricasRepository {
 
     // Map and parse the data
     return {
+      // Base Metrics
       ventas_totales_pesos: Number(data.ventas_totales_pesos) || 0,
       crecimiento_vs_semana_anterior_pct: Number(data.crecimiento_vs_semana_anterior_pct) || 0,
       ventas_totales_unidades: Number(data.ventas_totales_unidades) || 0,
+      inventario_inicial_total: Number(data.inventario_inicial_total) || 0,
+      venta_total_inventario: Number(data.venta_total_inventario) || 0,
       sell_through_pct: Number(data.sell_through_pct) || 0,
       cobertura_pct: Number(data.cobertura_pct) || 0,
       cobertura_ponderada_pct: Number(data.cobertura_ponderada_pct) || 0,
       promedio_dias_inventario: Number(data.promedio_dias_inventario) || 0,
       porcentaje_agotados_pct: Number(data.porcentaje_agotados_pct) || 0,
       avg_venta_promedio_diaria: Number(data.avg_venta_promedio_diaria) || 0,
+      
+      // Objectives
+      objetivo_ventas_totales_pesos: Number(data.objetivo_ventas_totales_pesos) || 0,
+      objetivo_sell_through_pct: Number(data.objetivo_sell_through_pct) || 0,
+      objetivo_promedio_dias_inventario: Number(data.objetivo_promedio_dias_inventario) || 0,
+      objetivo_avg_venta_promedio_diaria: Number(data.objetivo_avg_venta_promedio_diaria) || 0,
+      objetivo_cobertura_pct: Number(data.objetivo_cobertura_pct) || 0,
+      objetivo_cobertura_ponderada_pct: Number(data.objetivo_cobertura_ponderada_pct) || 0,
+      objetivo_porcentaje_agotados_pct: Number(data.objetivo_porcentaje_agotados_pct) || 0,
+      
+      // Differences
+      diferencia_ventas_totales_pesos: Number(data.diferencia_ventas_totales_pesos) || 0,
+      diferencia_sell_through_pct: Number(data.diferencia_sell_through_pct) || 0,
+      diferencia_promedio_dias_inventario: Number(data.diferencia_promedio_dias_inventario) || 0,
+      diferencia_avg_venta_promedio_diaria: Number(data.diferencia_avg_venta_promedio_diaria) || 0,
+      diferencia_cobertura_pct: Number(data.diferencia_cobertura_pct) || 0,
+      diferencia_cobertura_ponderada_pct: Number(data.diferencia_cobertura_ponderada_pct) || 0,
+      diferencia_porcentaje_agotados_pct: Number(data.diferencia_porcentaje_agotados_pct) || 0,
+      
+      // Variations
+      variacion_ventas_totales_pct: Number(data.variacion_ventas_totales_pct) || 0,
+      variacion_promedio_dias_inventario_pct: Number(data.variacion_promedio_dias_inventario_pct) || 0,
+      variacion_avg_venta_promedio_diaria_pct: Number(data.variacion_avg_venta_promedio_diaria_pct) || 0,
+      variacion_cobertura_pct: Number(data.variacion_cobertura_pct) || 0,
+      variacion_cobertura_ponderada_pct: Number(data.variacion_cobertura_ponderada_pct) || 0,
+      variacion_porcentaje_agotados_pct: Number(data.variacion_porcentaje_agotados_pct) || 0,
     };
   }
 
@@ -100,15 +129,44 @@ export class MetricasRepository {
     }
 
     return data.map((item: Record<string, unknown>) => ({
+      // Base Metrics
       ventas_totales_pesos: Number(item.ventas_totales_pesos) || 0,
       crecimiento_vs_semana_anterior_pct: Number(item.crecimiento_vs_semana_anterior_pct) || 0,
       ventas_totales_unidades: Number(item.ventas_totales_unidades) || 0,
+      inventario_inicial_total: Number(item.inventario_inicial_total) || 0,
+      venta_total_inventario: Number(item.venta_total_inventario) || 0,
       sell_through_pct: Number(item.sell_through_pct) || 0,
       cobertura_pct: Number(item.cobertura_pct) || 0,
       cobertura_ponderada_pct: Number(item.cobertura_ponderada_pct) || 0,
       promedio_dias_inventario: Number(item.promedio_dias_inventario) || 0,
       porcentaje_agotados_pct: Number(item.porcentaje_agotados_pct) || 0,
       avg_venta_promedio_diaria: Number(item.avg_venta_promedio_diaria) || 0,
+      
+      // Objectives
+      objetivo_ventas_totales_pesos: Number(item.objetivo_ventas_totales_pesos) || 0,
+      objetivo_sell_through_pct: Number(item.objetivo_sell_through_pct) || 0,
+      objetivo_promedio_dias_inventario: Number(item.objetivo_promedio_dias_inventario) || 0,
+      objetivo_avg_venta_promedio_diaria: Number(item.objetivo_avg_venta_promedio_diaria) || 0,
+      objetivo_cobertura_pct: Number(item.objetivo_cobertura_pct) || 0,
+      objetivo_cobertura_ponderada_pct: Number(item.objetivo_cobertura_ponderada_pct) || 0,
+      objetivo_porcentaje_agotados_pct: Number(item.objetivo_porcentaje_agotados_pct) || 0,
+      
+      // Differences
+      diferencia_ventas_totales_pesos: Number(item.diferencia_ventas_totales_pesos) || 0,
+      diferencia_sell_through_pct: Number(item.diferencia_sell_through_pct) || 0,
+      diferencia_promedio_dias_inventario: Number(item.diferencia_promedio_dias_inventario) || 0,
+      diferencia_avg_venta_promedio_diaria: Number(item.diferencia_avg_venta_promedio_diaria) || 0,
+      diferencia_cobertura_pct: Number(item.diferencia_cobertura_pct) || 0,
+      diferencia_cobertura_ponderada_pct: Number(item.diferencia_cobertura_ponderada_pct) || 0,
+      diferencia_porcentaje_agotados_pct: Number(item.diferencia_porcentaje_agotados_pct) || 0,
+      
+      // Variations
+      variacion_ventas_totales_pct: Number(item.variacion_ventas_totales_pct) || 0,
+      variacion_promedio_dias_inventario_pct: Number(item.variacion_promedio_dias_inventario_pct) || 0,
+      variacion_avg_venta_promedio_diaria_pct: Number(item.variacion_avg_venta_promedio_diaria_pct) || 0,
+      variacion_cobertura_pct: Number(item.variacion_cobertura_pct) || 0,
+      variacion_cobertura_ponderada_pct: Number(item.variacion_cobertura_ponderada_pct) || 0,
+      variacion_porcentaje_agotados_pct: Number(item.variacion_porcentaje_agotados_pct) || 0,
     }));
   }
 }

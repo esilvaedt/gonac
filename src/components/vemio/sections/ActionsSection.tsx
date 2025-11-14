@@ -25,7 +25,7 @@ export default function ActionsSection({ actions }: ActionsSectionProps) {
     setAccionSeleccionada(null);
   };
 
-  const handleCompletarWizard = (datos: any) => {
+  const handleCompletarWizard = (datos: unknown) => {
     console.log("Plan de acción completado:", datos);
     // Additional logic: show notification, refresh data, etc.
   };

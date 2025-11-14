@@ -53,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, pathname, router]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const login = async (email: string, password: string) => {
     // TODO: Replace with actual API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -62,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser({ email });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const signup = async (name: string, email: string, password: string) => {
     // TODO: Replace with actual API call
     await new Promise((resolve) => setTimeout(resolve, 1000));

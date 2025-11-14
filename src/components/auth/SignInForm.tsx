@@ -32,7 +32,7 @@ export default function SignInForm() {
 
     try {
       await login(formData.email, formData.password);
-    } catch (error) {
+    } catch {
       setError("Error al iniciar sesión. Verifica tus credenciales.");
     } finally {
       setLoading(false);

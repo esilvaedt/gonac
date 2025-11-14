@@ -17,8 +17,7 @@ import {
 
 export const getRiskLevel = (
   segment: string, 
-  diasInventario: number, 
-  _contribucion: number
+  diasInventario: number
 ): RiskLevel => {
   const normalized = segment.toLowerCase();
   

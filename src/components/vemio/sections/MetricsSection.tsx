@@ -7,9 +7,19 @@ import { formatCurrency, formatNumber, formatPercentage } from '@/utils/formatte
 import { METRIC_TARGETS } from '@/constants/tiendas.constants';
 import type { StoreMetrics } from '@/types/tiendas.types';
 
+interface MetricasData {
+  sell_through_pct?: number;
+  cobertura_ponderada_pct?: number;
+  crecimiento_vs_semana_anterior_pct?: number;
+  porcentaje_agotados_pct?: number;
+  avg_venta_promedio_diaria?: number;
+  cobertura_pct?: number;
+  ventas_totales_unidades?: number;
+}
+
 interface MetricsSectionProps {
   storeMetrics: StoreMetrics;
-  metricasData: any;
+  metricasData: MetricasData | null;
 }
 
 export default function MetricsSection({ storeMetrics, metricasData }: MetricsSectionProps) {
@@ -18,6 +28,7 @@ export default function MetricsSection({ storeMetrics, metricasData }: MetricsSe
   const crecimientoPct = metricasData?.crecimiento_vs_semana_anterior_pct ?? 0.125;
   const tasaQuiebrePct = metricasData?.porcentaje_agotados_pct ?? 2.3;
   const ventaPromedioDiaria = metricasData?.avg_venta_promedio_diaria ?? (storeMetrics.ventaPromedio / 7);
+  const coberturaPct = metricasData?.cobertura_pct ?? 0.83;
 
   return (
     <>
@@ -109,7 +120,7 @@ export default function MetricsSection({ storeMetrics, metricasData }: MetricsSe
       <div className="grid grid-cols-1 gap-4 mt-6 md:grid-cols-2 lg:grid-cols-5">
         <MetricCard
           title="Cobertura Numérica"
-          value={formatNumber(storeMetrics.totalTiendas)}
+          value={formatNumber(Math.round(coberturaPct * 100))}
           subtitle="100% del universo"
           color="blue"
           size="small"

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AccionesResponse, AccionesResumen, AccionesDetalleResponse } from '@/types/acciones';
+import { AccionesResumen, AccionesDetalleResponse } from '@/types/acciones';
 
 type FormatType = 'default' | 'with-metrics' | 'detalle';
 

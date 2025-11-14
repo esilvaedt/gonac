@@ -1,13 +1,6 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Public paths that don't require authentication
-  const publicPaths = ["/login", "/signup"];
-  const isPublicPath = publicPaths.includes(pathname);
-
+export function middleware() {
   // Get token from cookie or header (for now we'll skip this as we're using localStorage)
   // In production, you should use httpOnly cookies
 

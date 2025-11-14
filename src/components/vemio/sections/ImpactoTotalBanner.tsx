@@ -3,7 +3,6 @@
  */
 
 import { formatCurrency, formatNumber } from '@/utils/formatters';
-import type { StoreMetrics } from '@/types/tiendas.types';
 
 interface ImpactoTotalBannerProps {
   impactoTotal: number;
